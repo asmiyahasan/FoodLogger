@@ -21,10 +21,11 @@ final class SpeechRecorder {
         }
         let prefix = existingText.isEmpty ? "" : existingText + " "
         transcript = existingText
+        let box = WeakRecorder(self)
         do {
-            session = try RecognitionSession { [weak self] text in
+            session = try RecognitionSession { text in
                 Task { @MainActor in
-                    self?.transcript = prefix + text
+                    box.recorder?.transcript = prefix + text
                 }
             }
             isRecording = true
@@ -37,6 +38,12 @@ final class SpeechRecorder {
         session?.stop()
         isRecording = false
     }
+}
+
+/// Lets the audio callback update the recorder without keeping it alive.
+private final class WeakRecorder: @unchecked Sendable {
+    weak var recorder: SpeechRecorder?
+    init(_ recorder: SpeechRecorder) { self.recorder = recorder }
 }
 
 nonisolated enum SpeechPermissions {

@@ -6,6 +6,7 @@ struct TodayView: View {
     @State private var day = Calendar.current.startOfDay(for: .now)
     @State private var showingNewMeal = false
     @State private var showingCapture = false
+    @State private var showingBarcode = false
     @State private var showingSettings = false
     @State private var showingGoals = false
     @State private var showingHistory = false
@@ -47,6 +48,21 @@ struct TodayView: View {
                         .buttonStyle(.borderedProminent)
                         .buttonBorderShape(.capsule)
 
+                        #if os(iOS)
+                        Button {
+                            showingBarcode = true
+                        } label: {
+                            Label("Scan barcode", systemImage: "barcode.viewfinder")
+                                .labelStyle(.iconOnly)
+                                .font(.headline)
+                                .padding(.vertical, 6)
+                                .padding(.horizontal, 4)
+                        }
+                        .buttonStyle(.bordered)
+                        .buttonBorderShape(.circle)
+                        .accessibilityLabel("Scan a barcode")
+                        #endif
+
                         Button {
                             showingNewMeal = true
                         } label: {
@@ -63,6 +79,9 @@ struct TodayView: View {
                     .padding(.horizontal)
                     .padding(.bottom, 8)
                 }
+        }
+        .sheet(isPresented: $showingBarcode) {
+            BarcodeLogView(defaultDate: DayView.entryTimestamp(for: day))
         }
         .sheet(isPresented: $showingCapture) {
             CaptureView(defaultDate: DayView.entryTimestamp(for: day))

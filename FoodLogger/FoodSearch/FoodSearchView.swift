@@ -14,6 +14,7 @@ struct FoodSearchView: View {
     @State private var barcode = ""
     @State private var barcodeResult: SourceResult = .idle
     @State private var expandedSources: Set<FoodSource> = []
+    @State private var showingScanner = false
 
     enum SourceResult {
         case idle
@@ -61,6 +62,11 @@ struct FoodSearchView: View {
                 }
 
                 Section {
+                    #if os(iOS)
+                    Button("Scan with camera", systemImage: "barcode.viewfinder") {
+                        showingScanner = true
+                    }
+                    #endif
                     HStack {
                         TextField("Barcode number", text: $barcode)
                             .decimalKeyboard()
@@ -74,9 +80,17 @@ struct FoodSearchView: View {
                 } header: {
                     Text("Barcode")
                 } footer: {
-                    Text("Type the numbers under a barcode. Camera scanning comes later.")
+                    Text("Scan a packaged food, or type the numbers under its barcode.")
                 }
             }
+            #if os(iOS)
+            .sheet(isPresented: $showingScanner) {
+                BarcodeScannerSheet { code in
+                    barcode = code
+                    Task { await lookUpBarcode() }
+                }
+            }
+            #endif
             .searchable(text: $query, prompt: "Search foods")
             .task(id: query) { await runSearch() }
             .navigationTitle("Search foods")
@@ -201,7 +215,8 @@ struct FoodSearchView: View {
     private func lookUpBarcode() async {
         barcodeResult = .loading
         do {
-            if let product = try await OpenFoodFactsClient().product(barcode: barcode) {
+            let saved = myFoods.map { (basedOn: $0.basedOnFoodID, food: $0.candidate) }
+            if let product = try await BarcodeLookup.find(barcode, savedFoods: saved) {
                 barcodeResult = .done([product])
             } else {
                 barcodeResult = .message("No product with that barcode. You can enter the label values yourself.")
