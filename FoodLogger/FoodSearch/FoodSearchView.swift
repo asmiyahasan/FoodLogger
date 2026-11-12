@@ -31,19 +31,7 @@ struct FoodSearchView: View {
     private var trimmedQuery: String { query.trimmingCharacters(in: .whitespaces) }
 
     private var myFoodMatches: [FoodCandidate] {
-        let matches = trimmedQuery.isEmpty
-            ? Array(myFoods.prefix(10))
-            : myFoods.filter { SearchRanking.score(name: $0.name, terms: SearchRanking.terms(for: trimmedQuery)) != nil }
-        return matches.map { food in
-            FoodCandidate(
-                id: food.foodID,
-                name: food.name,
-                detail: "Usually \(gramsText(food.defaultGrams))",
-                source: .mine,
-                per100g: food.nutrientsPer100g,
-                servingGrams: food.defaultGrams
-            )
-        }
+        Array(SavedFoodRanking.rank(myFoods.map(\.saved), for: trimmedQuery).prefix(10))
     }
 
     var body: some View {

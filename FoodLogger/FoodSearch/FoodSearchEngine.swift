@@ -4,11 +4,11 @@ import Foundation
 /// and only goes online (Open Food Facts, USDA) when those don't have enough matches,
 /// which keeps analysis fast and within rate limits.
 nonisolated struct FoodSearchEngine: Sendable {
-    let userFoods: [FoodCandidate]
+    let savedFoods: [SavedFood]
     let usdaKey: String?
 
     func search(_ query: String) async -> [FoodCandidate] {
-        var results = Array(SearchRanking.rank(userFoods, for: query).prefix(3))
+        var results = Array(SavedFoodRanking.rank(savedFoods, for: query).prefix(3))
         results += await AFCDDatabase.shared.search(query, limit: 5)
 
         let wantsBrand = query.split(separator: " ").count >= 3 || results.count < 2
@@ -31,7 +31,7 @@ nonisolated struct FoodSearchEngine: Sendable {
         guard words.count > 1 else { return [] }
         var results: [FoodCandidate] = []
         for word in words.sorted(by: { $0.count > $1.count }) where word.count > 2 {
-            results += SearchRanking.rank(userFoods, for: word).prefix(2)
+            results += SavedFoodRanking.rank(savedFoods, for: word).prefix(2)
             results += await AFCDDatabase.shared.search(word, limit: 3)
         }
         var seen = Set<String>()
@@ -41,13 +41,21 @@ nonisolated struct FoodSearchEngine: Sendable {
 
 extension UserFood {
     var candidate: FoodCandidate {
-        FoodCandidate(
+        var detail = brand.isEmpty ? "" : "\(brand) · "
+        detail += "usually \(gramsText(defaultGrams))"
+        if timesUsed > 1 { detail += " · \(timesUsed)×" }
+        return FoodCandidate(
             id: foodID,
             name: name,
-            detail: "Usually \(gramsText(defaultGrams))",
+            detail: detail.prefix(1).uppercased() + detail.dropFirst(),
             source: .mine,
             per100g: nutrientsPer100g,
-            servingGrams: defaultGrams
+            servingGrams: defaultGrams,
+            brand: brand.isEmpty ? nil : brand
         )
+    }
+
+    var saved: SavedFood {
+        SavedFood(candidate: candidate, aliases: aliases, timesUsed: timesUsed, basedOn: basedOnFoodID)
     }
 }

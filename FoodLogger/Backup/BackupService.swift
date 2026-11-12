@@ -74,6 +74,7 @@ nonisolated struct WaterRecord: Codable, Sendable {
 nonisolated struct SavedFoodRecord: Codable, Sendable {
     var uuid: UUID
     var name: String
+    var brand: String?
     var aliases: [String]
     var nutrientsPer100g: Nutrients
     var defaultGrams: Double
@@ -149,7 +150,7 @@ enum BackupService {
             water: water.map { WaterRecord(timestamp: $0.timestamp, millilitres: $0.millilitres) },
             savedFoods: foods.map { food in
                 SavedFoodRecord(
-                    uuid: food.uuid, name: food.name, aliases: food.aliases,
+                    uuid: food.uuid, name: food.name, brand: food.brand, aliases: food.aliases,
                     nutrientsPer100g: food.nutrientsPer100g, defaultGrams: food.defaultGrams,
                     basedOnFoodID: food.basedOnFoodID, timesUsed: food.timesUsed,
                     lastUsed: food.lastUsed, createdAt: food.createdAt
@@ -211,6 +212,7 @@ enum BackupService {
                 basedOnFoodID: record.basedOnFoodID
             )
             food.uuid = record.uuid
+            food.brand = record.brand ?? ""
             food.aliases = record.aliases
             food.timesUsed = record.timesUsed
             food.lastUsed = record.lastUsed

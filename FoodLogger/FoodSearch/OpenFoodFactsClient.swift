@@ -105,7 +105,8 @@ nonisolated struct OFFProduct: Decodable, Sendable {
             detail: detailParts.isEmpty ? "Label values" : detailParts.joined(separator: " · "),
             source: .openFoodFacts,
             per100g: per100g,
-            servingGrams: servingQuantity?.value
+            servingGrams: servingQuantity?.value,
+            brand: brand
         )
     }
 }

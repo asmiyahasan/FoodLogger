@@ -180,7 +180,7 @@ struct CaptureView: View {
         let parser = ClaudeMealParser(
             apiKey: key,
             engine: FoodSearchEngine(
-                userFoods: myFoods.map(\.candidate),
+                savedFoods: myFoods.map(\.saved),
                 usdaKey: APIKeys.value(for: .usdaAPIKey)
             ),
             onProgress: { message in

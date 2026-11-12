@@ -10,11 +10,13 @@ struct DraftItem: Identifiable, Hashable {
     var sourceLabel = "Entered manually"
     var origin: ItemOrigin = .user
     var confidence: Double = 1
-    var saveToMyFoods = false
+    /// Remember this food (on by default) so it's suggested next time.
+    var saveToMyFoods = true
     /// A question or caveat from the AI, e.g. "Fried in oil?"
     var note = ""
     /// The database entry's own name, e.g. "Egg, chicken, whole, fried".
     var matchedName = ""
+    var brand = ""
 
     var nutrients: Nutrients { per100g.scaled(by: grams / 100) }
     var isFromMyFoods: Bool { foodID.hasPrefix("user:") }
@@ -49,6 +51,7 @@ extension DraftItem {
                 confidence: parsed.confidence
             )
             matchedName = food.name
+            brand = food.brand ?? ""
         } else {
             self.init(
                 name: parsed.name,

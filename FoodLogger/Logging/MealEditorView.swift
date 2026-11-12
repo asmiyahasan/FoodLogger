@@ -168,29 +168,45 @@ struct MealEditorView: View {
         dismiss()
     }
 
-    /// Saves items marked "Save to my foods" and counts uses of saved foods.
+    /// Learns from every logged item: remembers the food, its brand, your usual amount,
+    /// how often you have it, and the words used for it.
     private func updateMyFoods(countUse: Bool) {
-        let existing = (try? context.fetch(FetchDescriptor<UserFood>())) ?? []
-        for draft in items {
-            if draft.isFromMyFoods {
-                if countUse, let food = existing.first(where: { $0.foodID == draft.foodID }) {
-                    food.timesUsed += 1
-                    food.lastUsed = .now
-                }
-            } else if draft.saveToMyFoods {
-                let name = draft.name.trimmingCharacters(in: .whitespaces)
-                if let food = existing.first(where: { $0.name.localizedCaseInsensitiveCompare(name) == .orderedSame }) {
-                    food.nutrientsPer100g = draft.per100g
-                    food.defaultGrams = draft.grams
-                    food.lastUsed = .now
-                } else {
-                    context.insert(UserFood(
-                        name: name,
-                        nutrientsPer100g: draft.per100g,
-                        defaultGrams: draft.grams,
-                        basedOnFoodID: draft.foodID
-                    ))
-                }
+        var existing = (try? context.fetch(FetchDescriptor<UserFood>())) ?? []
+        for draft in items where draft.saveToMyFoods || draft.isFromMyFoods {
+            let name = draft.name.trimmingCharacters(in: .whitespaces)
+            // Skip unmatched items with no values: there's nothing useful to remember yet.
+            guard !name.isEmpty, draft.isFromMyFoods || draft.per100g.energyKcal > 0 else { continue }
+
+            let match = existing.first { food in
+                food.foodID == draft.foodID
+                    || (!draft.foodID.isEmpty && food.basedOnFoodID == draft.foodID)
+                    || food.name.localizedCaseInsensitiveCompare(name) == .orderedSame
+            }
+            let food: UserFood
+            if let match {
+                food = match
+            } else {
+                food = UserFood(
+                    name: name,
+                    nutrientsPer100g: draft.per100g,
+                    defaultGrams: draft.grams,
+                    basedOnFoodID: draft.isFromMyFoods ? "" : draft.foodID
+                )
+                context.insert(food)
+                existing.append(food)
+            }
+
+            if countUse || match == nil { food.timesUsed += 1 }
+            food.lastUsed = .now
+            food.defaultGrams = draft.grams
+            if !draft.isFromMyFoods { food.nutrientsPer100g = draft.per100g }
+            if !draft.brand.isEmpty { food.brand = draft.brand }
+
+            // Other names for it ("chilli jam" for your Beerenberg jar) so it matches next time.
+            for alias in [name, draft.matchedName] where !alias.isEmpty {
+                let isNew = alias.localizedCaseInsensitiveCompare(food.name) != .orderedSame
+                    && !food.aliases.contains { $0.localizedCaseInsensitiveCompare(alias) == .orderedSame }
+                if isNew { food.aliases.append(alias) }
             }
         }
     }

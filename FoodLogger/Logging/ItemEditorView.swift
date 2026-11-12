@@ -58,9 +58,9 @@ struct ItemEditorView: View {
 
                 if !draft.isFromMyFoods {
                     Section {
-                        Toggle("Save to my foods", isOn: $draft.saveToMyFoods)
+                        Toggle("Remember this food", isOn: $draft.saveToMyFoods)
                     } footer: {
-                        Text("Saved foods can be picked next time instead of typing the values again.")
+                        Text("Remembered foods come first in search, and Claude uses them with your usual amount. Turn off for one-offs.")
                     }
                 }
             }
@@ -108,6 +108,7 @@ struct ItemEditorView: View {
         draft.foodID = food.id
         draft.sourceLabel = food.source.shortLabel
         draft.matchedName = food.name
+        draft.brand = food.brand ?? ""
         if let serving = food.servingGrams, serving > 0 {
             draft.grams = serving
         }

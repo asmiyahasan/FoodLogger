@@ -94,7 +94,7 @@ struct SettingsView: View {
                     NavigationLink {
                         MyFoodsView()
                     } label: {
-                        LabeledContent("Saved foods", value: "\(myFoods.count)")
+                        LabeledContent("Remembered foods", value: "\(myFoods.count)")
                     }
                 }
 
@@ -147,23 +147,38 @@ extension SettingsView {
 struct MyFoodsView: View {
     @Environment(\.modelContext) private var context
     @AppStorage(SettingsKey.energyUnit) private var energyUnit: EnergyUnit = .kcal
-    @Query(sort: \UserFood.name) private var foods: [UserFood]
+    @Query(sort: [SortDescriptor(\UserFood.timesUsed, order: .reverse), SortDescriptor(\UserFood.name)])
+    private var foods: [UserFood]
 
     var body: some View {
         List {
             if foods.isEmpty {
                 ContentUnavailableView(
-                    "No saved foods",
+                    "Nothing remembered yet",
                     systemImage: "star",
-                    description: Text("Turn on Save to my foods when adding an item.")
+                    description: Text("Foods you log are remembered here automatically, with your usual amount.")
                 )
             }
             ForEach(foods) { food in
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(food.name)
-                    Text("\(energyUnit.format(kcal: food.nutrientsPer100g.energyKcal)) per 100 g · usually \(gramsText(food.defaultGrams))")
+                VStack(alignment: .leading, spacing: 3) {
+                    HStack {
+                        Text(food.name)
+                            .font(.body.weight(.medium))
+                        if !food.brand.isEmpty {
+                            Text(food.brand)
+                                .font(.caption)
+                                .foregroundStyle(Theme.turquoiseText)
+                        }
+                    }
+                    Text("Usually \(gramsText(food.defaultGrams)) · \(energyUnit.format(kcal: food.nutrientsPer100g.energyKcal)) per 100 g · \(food.timesUsed)×")
                         .font(.caption)
                         .foregroundStyle(.secondary)
+                    if !food.aliases.isEmpty {
+                        Text("Also: \(food.aliases.joined(separator: ", "))")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
+                    }
                 }
             }
             .onDelete { offsets in

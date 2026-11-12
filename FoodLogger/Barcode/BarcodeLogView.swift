@@ -68,7 +68,8 @@ struct BarcodeLogView: View {
                     sourceLabel: food.source.shortLabel,
                     origin: .user,
                     confidence: 1,
-                    matchedName: food.name
+                    matchedName: food.name,
+                    brand: food.brand ?? ""
                 ))
             } else {
                 // Not in Open Food Facts: enter the label once, then save it to My foods.

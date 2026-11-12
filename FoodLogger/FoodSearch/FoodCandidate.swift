@@ -34,6 +34,39 @@ nonisolated struct FoodCandidate: Identifiable, Hashable, Sendable {
     var per100g: Nutrients
     /// A typical serving in grams, when the source gives one.
     var servingGrams: Double?
+    /// The product's brand, for branded foods.
+    var brand: String? = nil
+}
+
+/// A food you've logged before, as used for search and by Claude.
+nonisolated struct SavedFood: Sendable {
+    var candidate: FoodCandidate
+    var aliases: [String]
+    var timesUsed: Int
+    var basedOn: String
+}
+
+/// Ranks your saved foods: matching any of their names, with frequent ones first.
+nonisolated enum SavedFoodRanking {
+    static func rank(_ foods: [SavedFood], for query: String) -> [FoodCandidate] {
+        let terms = SearchRanking.terms(for: query)
+        guard !terms.isEmpty else {
+            return foods.sorted { $0.timesUsed > $1.timesUsed }.map(\.candidate)
+        }
+        return foods
+            .compactMap { food -> (score: Int, food: FoodCandidate)? in
+                var names = [food.candidate.name] + food.aliases
+                if let brand = food.candidate.brand, !brand.isEmpty {
+                    names.append("\(brand) \(food.candidate.name)")
+                }
+                guard let best = names.compactMap({ SearchRanking.score(name: $0, terms: terms) }).min() else {
+                    return nil
+                }
+                return (best - min(food.timesUsed * 5, 60), food.candidate)
+            }
+            .sorted { $0.score < $1.score }
+            .map(\.food)
+    }
 }
 
 nonisolated enum FoodSearchError: LocalizedError, Sendable {

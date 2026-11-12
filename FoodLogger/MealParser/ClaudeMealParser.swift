@@ -50,8 +50,23 @@ nonisolated struct ClaudeMealParser: Sendable {
                 : "The user's description of this meal: \"\(spoken)\"",
         ])
 
-        var messages: [[String: Any]] = [["role": "user", "content": userContent]]
         var found: [String: FoodCandidate] = [:]
+        let usual = engine.savedFoods.sorted { $0.timesUsed > $1.timesUsed }.prefix(25)
+        if !usual.isEmpty {
+            for food in usual { found[food.candidate.id] = food.candidate }
+            let lines = usual.map { food -> String in
+                let brand = food.candidate.brand.map { " (\($0))" } ?? ""
+                let usualAmount = food.candidate.servingGrams.map { ", usually \(Int($0.rounded())) g" } ?? ""
+                let otherNames = food.aliases.isEmpty ? "" : ", also called: \(food.aliases.prefix(3).joined(separator: ", "))"
+                return "- \(food.candidate.name)\(brand)\(usualAmount)\(otherNames). food_id \(food.candidate.id)"
+            }
+            userContent.append([
+                "type": "text",
+                "text": "Foods this user logs often. If an item plausibly matches one, use its food_id directly and its usual amount, unless the photo or description says otherwise:\n" + lines.joined(separator: "\n"),
+            ])
+        }
+
+        var messages: [[String: Any]] = [["role": "user", "content": userContent]]
         var nudged = false
 
         onProgress("Reading the meal…")
