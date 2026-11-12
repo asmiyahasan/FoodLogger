@@ -207,6 +207,23 @@ struct DayView: View {
                 .accessibilityAddTraits(.isHeader)
             }
 
+            if AppExpiry.isExpiringSoon, let expiry = AppExpiry.expiryDate {
+                Section {
+                    Label {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Refresh needed \(expiry.formatted(.relative(presentation: .named)))")
+                                .font(.subheadline.weight(.semibold))
+                            Text("Open Xcode and press Run to keep FoodLogger working.\(BackupService.backupIsDue ? " Back up your data in Settings too." : "")")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                    } icon: {
+                        Image(systemName: "clock.badge.exclamationmark")
+                            .foregroundStyle(Theme.deepOrange)
+                    }
+                }
+            }
+
             Section {
                 dayPicker
                 HStack(spacing: 20) {

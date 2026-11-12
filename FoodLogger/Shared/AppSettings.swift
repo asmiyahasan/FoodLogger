@@ -50,6 +50,17 @@ nonisolated enum SettingsKey {
     static let waterReminderEndHour = "waterReminderEndHour"
     static let waterReminderIntervalHours = "waterReminderIntervalHours"
     static let pendingLaunchAction = "pendingLaunchAction"
+    static let lastBackupDate = "lastBackupDate"
+    static let backupIncludesPhotos = "backupIncludesPhotos"
+
+    /// Settings saved in a backup (goals, preferences, name, reminders).
+    static let backedUp: [String] = [
+        energyUnit, goalEnergyKcal, goalProtein, goalCarbs, goalFat, goalFibre, goalWaterMl,
+        quickWater1, quickWater2, keepMealPhotos, macrosFromCalories, macroPreset,
+        customProteinPercent, customFatPercent, fibreFromCalories, userName,
+        waterRemindersOn, waterReminderStartHour, waterReminderEndHour, waterReminderIntervalHours,
+        backupIncludesPhotos,
+    ]
 }
 
 /// Starting values until the user changes them in Settings.

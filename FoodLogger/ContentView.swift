@@ -26,7 +26,10 @@ struct ContentView: View {
         .animation(.easeInOut, value: hasCompletedOnboarding)
         .onChange(of: scenePhase) { _, phase in
             if phase == .active {
-                Task { await WaterReminders.reschedule(context: context) }
+                Task {
+                    await WaterReminders.reschedule(context: context)
+                    if hasCompletedOnboarding { await AppExpiry.scheduleReminder() }
+                }
             }
         }
     }

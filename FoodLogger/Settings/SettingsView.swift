@@ -74,6 +74,22 @@ struct SettingsView: View {
                     Text("Stored only in this device's Keychain. Get a free key at fdc.nal.usda.gov.")
                 }
 
+                Section {
+                    NavigationLink {
+                        BackupView()
+                    } label: {
+                        LabeledContent {
+                            if let last = BackupService.lastBackupDate {
+                                Text(last.formatted(.relative(presentation: .named)))
+                            } else {
+                                Text("Never").foregroundStyle(Theme.deepOrangeText)
+                            }
+                        } label: {
+                            Label("Backup", systemImage: "externaldrive")
+                        }
+                    }
+                }
+
                 Section("My foods") {
                     NavigationLink {
                         MyFoodsView()
@@ -91,6 +107,11 @@ struct SettingsView: View {
                             Text("Version \(Self.appVersion)")
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
+                            if let expiry = AppExpiry.expiryDate {
+                                Text("This install works until \(expiry.formatted(date: .abbreviated, time: .shortened))")
+                                    .font(.caption)
+                                    .foregroundStyle(AppExpiry.isExpiringSoon ? Theme.deepOrangeText : Color.secondary)
+                            }
                         }
                     }
                     .padding(.vertical, 4)
