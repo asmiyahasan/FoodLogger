@@ -5,6 +5,7 @@ import SwiftData
 struct TodayView: View {
     @State private var day = Calendar.current.startOfDay(for: .now)
     @State private var showingNewMeal = false
+    @State private var showingCapture = false
     @State private var showingSettings = false
     @State private var editingMeal: Meal?
 
@@ -22,18 +23,35 @@ struct TodayView: View {
                     }
                 }
                 .safeAreaInset(edge: .bottom) {
-                    Button {
-                        showingNewMeal = true
-                    } label: {
-                        Label("Log food", systemImage: "plus")
-                            .font(.headline)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 6)
+                    HStack(spacing: 12) {
+                        Button {
+                            showingCapture = true
+                        } label: {
+                            Label("Snap a meal", systemImage: "camera")
+                                .font(.headline)
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 6)
+                        }
+                        .buttonStyle(.borderedProminent)
+
+                        Button {
+                            showingNewMeal = true
+                        } label: {
+                            Label("Type it in", systemImage: "square.and.pencil")
+                                .labelStyle(.iconOnly)
+                                .font(.headline)
+                                .padding(.vertical, 6)
+                                .padding(.horizontal, 4)
+                        }
+                        .buttonStyle(.bordered)
+                        .accessibilityLabel("Log food by typing")
                     }
-                    .buttonStyle(.borderedProminent)
                     .padding(.horizontal)
                     .padding(.bottom, 8)
                 }
+        }
+        .sheet(isPresented: $showingCapture) {
+            CaptureView(defaultDate: DayView.entryTimestamp(for: day))
         }
         .sheet(isPresented: $showingNewMeal) {
             MealEditorView(defaultDate: DayView.entryTimestamp(for: day))
@@ -116,7 +134,7 @@ struct DayView: View {
 
             Section("Meals") {
                 if meals.isEmpty {
-                    Text("Nothing logged yet. Tap Log food to add a meal.")
+                    Text("Nothing logged yet. Tap Snap a meal to add one.")
                         .foregroundStyle(.secondary)
                 }
                 ForEach(meals) { meal in

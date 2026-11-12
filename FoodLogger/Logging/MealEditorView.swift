@@ -7,27 +7,64 @@ struct MealEditorView: View {
     @Environment(\.modelContext) private var context
     @Environment(\.dismiss) private var dismiss
     @AppStorage(SettingsKey.energyUnit) private var energyUnit: EnergyUnit = .kcal
+    @AppStorage(SettingsKey.keepMealPhotos) private var keepMealPhotos = true
 
     let meal: Meal?
+    /// From photo + voice capture (new meals only).
+    private let photo: Data?
+    private let transcript: String
 
     @State private var timestamp: Date
     @State private var mealType: MealType
     @State private var items: [DraftItem]
     @State private var editingItem: DraftItem?
 
-    init(meal: Meal? = nil, defaultDate: Date = .now) {
+    init(
+        meal: Meal? = nil,
+        defaultDate: Date = .now,
+        drafts: [DraftItem] = [],
+        photo: Data? = nil,
+        transcript: String = ""
+    ) {
         self.meal = meal
+        self.photo = meal?.photo ?? photo
+        self.transcript = meal?.transcript ?? transcript
         let time = meal?.timestamp ?? defaultDate
         _timestamp = State(initialValue: time)
         _mealType = State(initialValue: meal?.mealType ?? MealType.inferred(from: time))
-        _items = State(initialValue: meal?.sortedItems.map { DraftItem(item: $0) } ?? [])
+        _items = State(initialValue: meal.map { $0.sortedItems.map { DraftItem(item: $0) } } ?? drafts)
     }
+
+    private var itemsToCheck: Int { items.filter(\.needsCheck).count }
 
     private var totals: Nutrients { items.reduce(Nutrients.zero) { $0 + $1.nutrients } }
 
     var body: some View {
         NavigationStack {
             Form {
+                if photo != nil || !transcript.isEmpty {
+                    Section {
+                        HStack(alignment: .top, spacing: 12) {
+                            if let photo, let image = Image(imageData: photo) {
+                                image
+                                    .resizable()
+                                    .scaledToFill()
+                                    .frame(width: 72, height: 72)
+                                    .clipShape(RoundedRectangle(cornerRadius: 10))
+                            }
+                            if !transcript.isEmpty {
+                                Text("“\(transcript)”")
+                                    .font(.callout)
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
+                    } footer: {
+                        if itemsToCheck > 0 {
+                            Text("\(itemsToCheck) item\(itemsToCheck == 1 ? "" : "s") marked Check: tap to confirm the food and amount.")
+                        }
+                    }
+                }
+
                 Section {
                     Picker("Meal", selection: $mealType) {
                         ForEach(MealType.allCases) { type in
@@ -68,7 +105,7 @@ struct MealEditorView: View {
                     }
                 }
             }
-            .navigationTitle(meal == nil ? "Log food" : "Edit meal")
+            .navigationTitle(meal != nil ? "Edit meal" : (photo != nil || !transcript.isEmpty) ? "Review" : "Log food")
             .inlineNavigationTitle()
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -106,6 +143,10 @@ struct MealEditorView: View {
         target.timestamp = timestamp
         target.mealType = mealType
         target.status = .logged
+        if meal == nil {
+            target.transcript = transcript
+            target.photo = keepMealPhotos ? photo : nil
+        }
 
         for (index, draft) in items.enumerated() {
             let item = MealItem(
@@ -159,13 +200,34 @@ struct DraftItemRow: View {
     let item: DraftItem
     let unit: EnergyUnit
 
+    private var detail: String {
+        var parts = [gramsText(item.grams), item.sourceLabel]
+        if item.origin != .user { parts.append(item.origin.label) }
+        return parts.joined(separator: " · ")
+    }
+
     var body: some View {
         HStack {
             VStack(alignment: .leading, spacing: 2) {
-                Text(item.name.isEmpty ? "Unnamed item" : item.name)
-                Text("\(gramsText(item.grams)) · \(item.sourceLabel)")
+                HStack(spacing: 6) {
+                    Text(item.name.isEmpty ? "Unnamed item" : item.name)
+                    if item.needsCheck {
+                        Text("Check")
+                            .font(.caption2.weight(.semibold))
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 1)
+                            .overlay(Capsule().stroke(Color.orange))
+                            .foregroundStyle(.orange)
+                    }
+                }
+                Text(detail)
                     .font(.caption)
                     .foregroundStyle(.secondary)
+                if !item.note.isEmpty {
+                    Text(item.note)
+                        .font(.caption)
+                        .foregroundStyle(.orange)
+                }
             }
             Spacer()
             Text(unit.format(kcal: item.nutrients.energyKcal))

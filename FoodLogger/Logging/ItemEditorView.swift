@@ -28,7 +28,11 @@ struct ItemEditorView: View {
                     }
                 } footer: {
                     if !draft.foodID.isEmpty {
-                        Text("Values from \(draft.sourceLabel).")
+                        Text(draft.matchedName.isEmpty
+                             ? "Values from \(draft.sourceLabel)."
+                             : "Values from \(draft.sourceLabel): \(draft.matchedName).")
+                    } else if !draft.note.isEmpty {
+                        Text(draft.note)
                     }
                 }
 
@@ -73,7 +77,11 @@ struct ItemEditorView: View {
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Done") {
-                        onSave(draft)
+                        // You've reviewed it, so it no longer needs checking.
+                        var reviewed = draft
+                        reviewed.confidence = 1
+                        reviewed.note = ""
+                        onSave(reviewed)
                         dismiss()
                     }
                     .disabled(!canSave)
@@ -93,11 +101,13 @@ struct ItemEditorView: View {
     /// Fills the item from a search result. The amount keeps what you typed,
     /// unless the source gives a typical serving.
     private func apply(_ food: FoodCandidate) {
-        draft.name = food.name
+        if draft.name.isEmpty || draft.matchedName.isEmpty {
+            draft.name = food.name
+        }
         draft.per100g = food.per100g
         draft.foodID = food.id
         draft.sourceLabel = food.source.shortLabel
-        draft.origin = .user
+        draft.matchedName = food.name
         if let serving = food.servingGrams, serving > 0 {
             draft.grams = serving
         }

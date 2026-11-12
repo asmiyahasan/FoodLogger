@@ -11,9 +11,15 @@ struct DraftItem: Identifiable, Hashable {
     var origin: ItemOrigin = .user
     var confidence: Double = 1
     var saveToMyFoods = false
+    /// A question or caveat from the AI, e.g. "Fried in oil?"
+    var note = ""
+    /// The database entry's own name, e.g. "Egg, chicken, whole, fried".
+    var matchedName = ""
 
     var nutrients: Nutrients { per100g.scaled(by: grams / 100) }
     var isFromMyFoods: Bool { foodID.hasPrefix("user:") }
+    /// Shown with a Check tag on the review screen.
+    var needsCheck: Bool { confidence < 0.6 || (foodID.isEmpty && origin != .user) }
 }
 
 extension DraftItem {
@@ -27,5 +33,33 @@ extension DraftItem {
             origin: item.origin,
             confidence: item.confidence
         )
+    }
+}
+
+extension DraftItem {
+    init(parsed: ParsedMealItem) {
+        if let food = parsed.food {
+            self.init(
+                name: parsed.name,
+                grams: parsed.grams,
+                per100g: food.per100g,
+                foodID: food.id,
+                sourceLabel: food.source.shortLabel,
+                origin: parsed.origin,
+                confidence: parsed.confidence
+            )
+            matchedName = food.name
+        } else {
+            self.init(
+                name: parsed.name,
+                grams: parsed.grams,
+                per100g: Nutrients(),
+                foodID: "",
+                sourceLabel: "No database match",
+                origin: parsed.origin,
+                confidence: 0
+            )
+        }
+        note = parsed.food == nil ? "No match found. Tap to search." : parsed.note
     }
 }

@@ -10,6 +10,7 @@ nonisolated enum SearchRanking {
         "yoghurt", "yogurt", "ice", "confection", "jam", "spread", "snack", "lolly",
         "candy", "chocolate", "coated", "sweetened", "flavoured", "flavored", "dessert",
         "pudding", "pastry", "slice", "loaf", "cracker", "nectar", "cordial", "liqueur",
+        "oil", "flour", "meal", "butter", "paste", "extract",
     ]
 
     /// Parts of a food or unusual kinds, ranked below the whole, common food.
@@ -64,6 +65,8 @@ nonisolated enum SearchRanking {
             score = 0            // "Banana, cavendish, raw"
         } else if headNounMatches {
             score = 100          // "Banana chip", or "Egg, fried" for "fried egg"
+        } else if segments.count > 1, !Set(segments[1]).isDisjoint(with: terms) {
+            score = 120          // category-first names: "Nut, almond", "Fish, salmon"
         } else if terms.allSatisfy({ head.contains($0) }) {
             score = 150          // "Cavendish banana"
         } else {
