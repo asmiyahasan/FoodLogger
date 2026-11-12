@@ -82,6 +82,15 @@ Returns compact JSON: `food_id`, `name`, `source`, `detail`, `per_100g` (kcal, p
    - always with a visible note ("Adjusted +30% to match your usual portions").
 3. The review screen opens. Saving records the corrections and updates remembered foods.
 
+## Household measures for searched foods
+
+The food databases only give values per 100 g. When you pick a food from search in the item editor, `MeasureLookup` finds measures such as cup, slice or piece, plus that food's own tbsp and tsp weights (a tablespoon of flour is about 8 g, oil about 14 g, honey about 21 g):
+
+1. For USDA foods, it reads the measured portions from the USDA food details endpoint (`foodPortions`). This is real data.
+2. It then asks `claude-haiku-5-5` for 2–3 typical measures and spoon weights to fill any gaps. This is a single small JSON reply with no tools.
+
+Results are saved in `food-measures.json` (`MeasureCache`), so each food is looked up once. Only weights come from this step; nutrition values still come from the database. Photo and voice meals get their measures from the main prompt, which also asks for spoon weights on spoonable foods.
+
 ## Cost
 
 A typical meal is one image plus 2–4 short rounds, roughly one or two US cents at Sonnet 5.5 prices ($2 / $10 per million input / output tokens).

@@ -8,6 +8,7 @@ struct ItemEditorView: View {
     @AppStorage(SettingsKey.energyUnit) private var energyUnit: EnergyUnit = .kcal
     @State private var draft: DraftItem
     @State private var showingSearch = false
+    @State private var findingMeasures = false
     let onSave: (DraftItem) -> Void
 
     init(item: DraftItem, onSave: @escaping (DraftItem) -> Void) {
@@ -42,6 +43,14 @@ struct ItemEditorView: View {
 
                 Section("How much") {
                     AmountEditor(draft: $draft)
+                    if findingMeasures {
+                        HStack(spacing: 8) {
+                            ProgressView()
+                            Text("Finding cups, pieces and spoon weights…")
+                                .font(.footnote)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
                 }
 
                 Section {
@@ -123,6 +132,22 @@ struct ItemEditorView: View {
             draft.unitName = draft.availableMeasures.contains { $0.name == food.preferredUnit } ? food.preferredUnit : ""
         }
         draft.saveToMyFoods = false
+        if food.source != .mine {
+            lookUpMeasures(for: food)
+        }
+    }
+
+    /// Adds household measures and food-specific spoon weights once they're found.
+    private func lookUpMeasures(for food: FoodCandidate) {
+        findingMeasures = true
+        Task {
+            let found = await MeasureLookup.measures(for: food)
+            findingMeasures = false
+            guard draft.foodID == food.id else { return }   // you picked something else meanwhile
+            for unit in found where !draft.measures.contains(where: { $0.name == unit.name }) {
+                draft.measures.append(unit)
+            }
+        }
     }
 }
 

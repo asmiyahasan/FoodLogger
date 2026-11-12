@@ -242,6 +242,9 @@ nonisolated struct ClaudeMealParser: Sendable {
     (cooked rice: cup 160, plate 300; roti: piece 40; dal: ladle 120, cup 240; curry: ladle 120; \
     egg: piece 50; bread: slice 35). Use short singular names. Set display_unit to the measure \
     that best describes the amount, so the user sees "1½ cups" rather than grams.
+    - For foods measured by the spoon (oil, ghee, butter, sugar, flour, sauces, spices, nut butters, \
+    powders), also include tbsp and tsp with that food's own weight (oil: tbsp 14; flour: tbsp 8; \
+    honey: tbsp 21), since a spoonful of each weighs something different.
     - When the user gives household amounts ("two ladles of dal", "a cup of rice"), convert them \
     with typical weights for that food and use that measure as display_unit.
     - Recipe estimates get confidence 0.6 or less, as amounts vary between cooks.
