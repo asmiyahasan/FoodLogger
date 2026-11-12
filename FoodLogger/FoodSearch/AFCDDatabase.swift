@@ -21,30 +21,20 @@ actor AFCDDatabase {
     static let shared = AFCDDatabase()
 
     private var foods: [AFCDFood]?
-    private var searchNames: [String] = []
 
     var isAvailable: Bool {
         Bundle.main.url(forResource: "afcd", withExtension: "json") != nil
     }
 
     func search(_ query: String, limit: Int = 12) -> [FoodCandidate] {
-        let all = loadIfNeeded()
-        let terms = Self.normalise(query)
-            .split(separator: " ")
-            .map { Self.singular(String($0)) }
+        let terms = SearchRanking.terms(for: query)
         guard !terms.isEmpty else { return [] }
 
-        var matches: [(score: Int, food: AFCDFood)] = []
-        for (index, food) in all.enumerated() {
-            let name = searchNames[index]
-            guard terms.allSatisfy({ name.contains($0) }) else { continue }
-            // Shorter names and names starting with the first word rank higher.
-            var score = name.count
-            if name.hasPrefix(terms[0]) { score -= 100 }
-            matches.append((score, food))
-        }
-
-        return matches
+        return loadIfNeeded()
+            .compactMap { food -> (score: Int, food: AFCDFood)? in
+                guard let score = SearchRanking.score(name: food.name, terms: terms) else { return nil }
+                return (score, food)
+            }
             .sorted { $0.score < $1.score }
             .prefix(limit)
             .map { match in
@@ -69,19 +59,6 @@ actor AFCDDatabase {
             return []
         }
         foods = decoded
-        searchNames = decoded.map { Self.normalise($0.name) }
         return decoded
-    }
-
-    private static func normalise(_ text: String) -> String {
-        text.folding(options: [.caseInsensitive, .diacriticInsensitive], locale: nil)
-            .replacingOccurrences(of: ",", with: " ")
-            .replacingOccurrences(of: "(", with: " ")
-            .replacingOccurrences(of: ")", with: " ")
-    }
-
-    /// "eggs" → "egg", "slices" → "slice" so plurals still match.
-    private static func singular(_ word: String) -> String {
-        word.count > 3 && word.hasSuffix("s") && !word.hasSuffix("ss") ? String(word.dropLast()) : word
     }
 }

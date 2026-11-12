@@ -13,6 +13,7 @@ struct FoodSearchView: View {
     @State private var results: [FoodSource: SourceResult] = [:]
     @State private var barcode = ""
     @State private var barcodeResult: SourceResult = .idle
+    @State private var expandedSources: Set<FoodSource> = []
 
     enum SourceResult {
         case idle
@@ -31,7 +32,7 @@ struct FoodSearchView: View {
     private var myFoodMatches: [FoodCandidate] {
         let matches = trimmedQuery.isEmpty
             ? Array(myFoods.prefix(10))
-            : myFoods.filter { $0.name.localizedCaseInsensitiveContains(trimmedQuery) }
+            : myFoods.filter { SearchRanking.score(name: $0.name, terms: SearchRanking.terms(for: trimmedQuery)) != nil }
         return matches.map { food in
             FoodCandidate(
                 id: food.foodID,
@@ -55,7 +56,7 @@ struct FoodSearchView: View {
 
                 ForEach([FoodSource.afcd, .openFoodFacts, .usda], id: \.self) { source in
                     Section(source.title) {
-                        resultRows(results[source] ?? .idle)
+                        resultRows(results[source] ?? .idle, source: source)
                     }
                 }
 
@@ -89,7 +90,7 @@ struct FoodSearchView: View {
     }
 
     @ViewBuilder
-    private func resultRows(_ result: SourceResult) -> some View {
+    private func resultRows(_ result: SourceResult, source: FoodSource? = nil) -> some View {
         switch result {
         case .idle:
             Text("Type at least 2 letters to search.")
@@ -104,7 +105,14 @@ struct FoodSearchView: View {
                 Text("No close match")
                     .foregroundStyle(.secondary)
             }
-            ForEach(foods) { candidateRow($0) }
+            let limit = (source == nil || source == .afcd || expandedSources.contains(source!)) ? foods.count : 5
+            ForEach(foods.prefix(limit)) { candidateRow($0) }
+            if foods.count > limit, let source {
+                Button("Show \(foods.count - limit) more") {
+                    expandedSources.insert(source)
+                }
+                .buttonStyle(.borderless)
+            }
         }
     }
 
@@ -145,6 +153,7 @@ struct FoodSearchView: View {
         guard !Task.isCancelled else { return }
 
         results = [.afcd: .loading, .openFoodFacts: .loading, .usda: .loading]
+        expandedSources = []
 
         async let afcd = searchAFCD(text)
         async let openFoodFacts = searchOpenFoodFacts(text)
@@ -172,7 +181,7 @@ struct FoodSearchView: View {
 
     private func searchOpenFoodFacts(_ text: String) async -> SourceResult {
         do {
-            return .done(try await OpenFoodFactsClient().search(text))
+            return .done(SearchRanking.rank(try await OpenFoodFactsClient().search(text), for: text))
         } catch {
             return .message(Self.describe(error))
         }
@@ -183,7 +192,7 @@ struct FoodSearchView: View {
             return .message("Add your USDA API key in Settings to search USDA.")
         }
         do {
-            return .done(try await USDAClient(apiKey: key).search(text))
+            return .done(SearchRanking.rank(try await USDAClient(apiKey: key).search(text), for: text))
         } catch {
             return .message(Self.describe(error))
         }
