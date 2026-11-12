@@ -7,15 +7,21 @@ struct TodayView: View {
     @State private var showingNewMeal = false
     @State private var showingCapture = false
     @State private var showingSettings = false
+    @State private var showingGoals = false
     @State private var editingMeal: Meal?
 
     var body: some View {
         NavigationStack {
-            DayView(day: $day, editingMeal: $editingMeal)
+            DayView(day: $day, editingMeal: $editingMeal, showingGoals: $showingGoals)
                 .id(day)
                 .navigationTitle("FoodLogger")
                 .inlineNavigationTitle()
                 .toolbar {
+                    ToolbarItem(placement: .primaryAction) {
+                        Button("Goals", systemImage: "target") {
+                            showingGoals = true
+                        }
+                    }
                     ToolbarItem(placement: .primaryAction) {
                         Button("Settings", systemImage: "gearshape") {
                             showingSettings = true
@@ -59,6 +65,16 @@ struct TodayView: View {
         .sheet(item: $editingMeal) { meal in
             MealEditorView(meal: meal)
         }
+        .sheet(isPresented: $showingGoals) {
+            NavigationStack {
+                GoalsView()
+                    .toolbar {
+                        ToolbarItem(placement: .confirmationAction) {
+                            Button("Done") { showingGoals = false }
+                        }
+                    }
+            }
+        }
         .sheet(isPresented: $showingSettings) {
             SettingsView()
         }
@@ -69,6 +85,7 @@ struct TodayView: View {
 struct DayView: View {
     @Binding var day: Date
     @Binding var editingMeal: Meal?
+    @Binding var showingGoals: Bool
 
     @Environment(\.modelContext) private var context
     @Query private var meals: [Meal]
@@ -89,9 +106,10 @@ struct DayView: View {
     @AppStorage(SettingsKey.customFatPercent) private var customFatPercent = GoalDefaults.customFatPercent
     @AppStorage(SettingsKey.fibreFromCalories) private var fibreFromCalories = false
 
-    init(day: Binding<Date>, editingMeal: Binding<Meal?>) {
+    init(day: Binding<Date>, editingMeal: Binding<Meal?>, showingGoals: Binding<Bool>) {
         _day = day
         _editingMeal = editingMeal
+        _showingGoals = showingGoals
         let start = Calendar.current.startOfDay(for: day.wrappedValue)
         let end = Calendar.current.date(byAdding: .day, value: 1, to: start) ?? start.addingTimeInterval(86_400)
         _meals = Query(
@@ -136,6 +154,10 @@ struct DayView: View {
                     }
                 }
                 .padding(.vertical, 8)
+                .contentShape(Rectangle())
+                .onTapGesture { showingGoals = true }
+                .accessibilityAddTraits(.isButton)
+                .accessibilityHint("Opens your goals")
             }
 
             Section("Water") {
