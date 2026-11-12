@@ -59,3 +59,38 @@ struct GoalProgressBar: View {
             .accessibilityHidden(true)
     }
 }
+
+/// The app logo (the apple-and-ring icon), at any size.
+struct AppLogo: View {
+    var size: CGFloat = 40
+
+    var body: some View {
+        Image("AppLogo")
+            .resizable()
+            .interpolation(.high)
+            .scaledToFit()
+            .frame(width: size, height: size)
+            .shadow(color: Theme.turquoise.opacity(0.25), radius: size * 0.12, y: size * 0.05)
+            .accessibilityHidden(true)
+    }
+}
+
+/// "Hi, Asmiya!", or "Hi there!" when no name is set.
+func greeting(for name: String) -> String {
+    let trimmed = name.trimmingCharacters(in: .whitespaces)
+    return trimmed.isEmpty ? "Hi there!" : "Hi, \(trimmed)!"
+}
+
+/// The logo gently pulsing, used while Claude analyses a meal.
+struct PulsingLogo: View {
+    var size: CGFloat = 26
+    @State private var isPulsing = false
+
+    var body: some View {
+        AppLogo(size: size)
+            .scaleEffect(isPulsing ? 1.1 : 0.9)
+            .opacity(isPulsing ? 1 : 0.7)
+            .animation(.easeInOut(duration: 0.7).repeatForever(autoreverses: true), value: isPulsing)
+            .onAppear { isPulsing = true }
+    }
+}

@@ -5,6 +5,7 @@ struct SettingsView: View {
     @Environment(\.dismiss) private var dismiss
     @Query private var myFoods: [UserFood]
 
+    @AppStorage(SettingsKey.userName) private var userName = ""
     @AppStorage(SettingsKey.energyUnit) private var energyUnit: EnergyUnit = .kcal
     @AppStorage(SettingsKey.keepMealPhotos) private var keepMealPhotos = true
     @AppStorage(SettingsKey.goalEnergyKcal) private var goalEnergy = GoalDefaults.energyKcal
@@ -16,6 +17,13 @@ struct SettingsView: View {
     var body: some View {
         NavigationStack {
             Form {
+                Section("Profile") {
+                    LabeledContent("Name") {
+                        TextField("Your name", text: $userName)
+                            .multilineTextAlignment(.trailing)
+                    }
+                }
+
                 Section("Units") {
                     Picker("Energy", selection: $energyUnit) {
                         ForEach(EnergyUnit.allCases) { unit in
@@ -74,6 +82,20 @@ struct SettingsView: View {
                     }
                 }
 
+                Section {
+                    HStack(spacing: 14) {
+                        AppLogo(size: 44)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("FoodLogger")
+                                .font(.rounded(.headline, weight: .bold))
+                            Text("Version \(Self.appVersion)")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                    .padding(.vertical, 4)
+                }
+
                 Section("Data sources") {
                     Text("Australian Food Composition Database, Release 3 © Food Standards Australia New Zealand, licensed under CC BY 4.0.")
                     Text("Open Food Facts data © Open Food Facts contributors, licensed under the Open Database License.")
@@ -90,6 +112,14 @@ struct SettingsView: View {
                 }
             }
         }
+    }
+}
+
+extension SettingsView {
+    static var appVersion: String {
+        let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0"
+        let build = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "1"
+        return "\(version) (\(build))"
     }
 }
 

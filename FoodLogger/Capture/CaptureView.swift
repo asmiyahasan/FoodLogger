@@ -141,7 +141,7 @@ struct CaptureView: View {
                 HStack {
                     Spacer()
                     if isAnalysing {
-                        ProgressView()
+                        PulsingLogo()
                         Text(progress.isEmpty ? "Analysing…" : progress)
                     } else {
                         Label("Analyse meal", systemImage: "sparkles")

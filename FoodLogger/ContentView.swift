@@ -9,8 +9,19 @@ import SwiftUI
 import SwiftData
 
 struct ContentView: View {
+    @AppStorage(SettingsKey.hasCompletedOnboarding) private var hasCompletedOnboarding = false
+
     var body: some View {
-        TodayView()
+        Group {
+            if hasCompletedOnboarding {
+                TodayView()
+                    .transition(.opacity)
+            } else {
+                OnboardingView()
+                    .transition(.opacity)
+            }
+        }
+        .animation(.easeInOut, value: hasCompletedOnboarding)
     }
 }
 

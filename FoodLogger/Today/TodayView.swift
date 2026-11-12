@@ -15,7 +15,7 @@ struct TodayView: View {
         NavigationStack {
             DayView(day: $day, editingMeal: $editingMeal, showingGoals: $showingGoals)
                 .id(day)
-                .navigationTitle("FoodLogger")
+                .navigationTitle("")
                 .inlineNavigationTitle()
                 .toolbar {
                     ToolbarItem(placement: .navigation) {
@@ -104,6 +104,7 @@ struct DayView: View {
     @Query private var meals: [Meal]
     @Query private var water: [WaterEntry]
 
+    @AppStorage(SettingsKey.userName) private var userName = ""
     @AppStorage(SettingsKey.energyUnit) private var energyUnit: EnergyUnit = .kcal
     @AppStorage(SettingsKey.goalEnergyKcal) private var goalEnergy = GoalDefaults.energyKcal
     @AppStorage(SettingsKey.goalProtein) private var goalProtein = GoalDefaults.protein
@@ -154,6 +155,26 @@ struct DayView: View {
 
     var body: some View {
         List {
+            Section {
+                HStack(spacing: 14) {
+                    AppLogo(size: 48)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(greeting(for: userName))
+                            .font(.rounded(.largeTitle, weight: .bold))
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.7)
+                        Text(Self.dayMessage(for: .now))
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                    }
+                    Spacer(minLength: 0)
+                }
+                .listRowBackground(Color.clear)
+                .listRowInsets(EdgeInsets(top: 4, leading: 4, bottom: 4, trailing: 4))
+                .accessibilityElement(children: .combine)
+                .accessibilityAddTraits(.isHeader)
+            }
+
             Section {
                 dayPicker
                 HStack(spacing: 20) {
@@ -250,6 +271,16 @@ struct DayView: View {
     private func shiftDay(by days: Int) {
         if let newDay = Calendar.current.date(byAdding: .day, value: days, to: day) {
             day = Calendar.current.startOfDay(for: newDay)
+        }
+    }
+
+    /// A short line under the greeting, by time of day.
+    static func dayMessage(for date: Date) -> String {
+        switch Calendar.current.component(.hour, from: date) {
+        case 5..<12: "Good morning. What's for breakfast?"
+        case 12..<17: "Good afternoon. Keep it going."
+        case 17..<22: "Good evening. How was today?"
+        default: "Late one? Don't forget to log it."
         }
     }
 

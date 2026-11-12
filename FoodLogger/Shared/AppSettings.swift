@@ -43,6 +43,8 @@ nonisolated enum SettingsKey {
     static let customProteinPercent = "customProteinPercent"
     static let customFatPercent = "customFatPercent"
     static let fibreFromCalories = "fibreFromCalories"
+    static let userName = "userName"
+    static let hasCompletedOnboarding = "hasCompletedOnboarding"
 }
 
 /// Starting values until the user changes them in Settings.

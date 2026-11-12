@@ -2,6 +2,10 @@ import SwiftUI
 
 /// All daily goals in one place: energy, macros, fibre and water.
 struct GoalsView: View {
+    /// A short line shown at the top (used during first-time setup).
+    var intro: String? = nil
+    var showsReset = true
+
     @AppStorage(SettingsKey.energyUnit) private var energyUnit: EnergyUnit = .kcal
     @AppStorage(SettingsKey.goalEnergyKcal) private var goalEnergy = GoalDefaults.energyKcal
     @AppStorage(SettingsKey.goalProtein) private var goalProtein = GoalDefaults.protein
@@ -21,6 +25,13 @@ struct GoalsView: View {
 
     var body: some View {
         Form {
+            if let intro {
+                Section {
+                    Text(intro)
+                        .foregroundStyle(.secondary)
+                }
+            }
+
             Section {
                 NumberField(title: "Daily energy", value: energyGoal, unit: energyUnit.symbol)
             } header: {
@@ -86,12 +97,14 @@ struct GoalsView: View {
                 Text("Set the buttons to the glasses or bottles you usually drink from.")
             }
 
-            Section {
-                Button("Reset all goals", role: .destructive) {
-                    confirmingReset = true
+            if showsReset {
+                Section {
+                    Button("Reset all goals", role: .destructive) {
+                        confirmingReset = true
+                    }
+                } footer: {
+                    Text("Goes back to the starting goals. Your logged meals and water aren't affected.")
                 }
-            } footer: {
-                Text("Goes back to the starting goals. Your logged meals and water aren't affected.")
             }
         }
         .navigationTitle("Goals")
