@@ -78,7 +78,9 @@ struct TodayView: View {
                         .accessibilityLabel("Log food by typing")
                     }
                     .padding(.horizontal)
+                    .padding(.top, 10)
                     .padding(.bottom, 8)
+                    .background(.bar)   // keeps the meal list from showing through the buttons
                 }
         }
         .onAppear(perform: handleLaunchAction)

@@ -227,8 +227,9 @@ nonisolated struct ClaudeMealParser: Sendable {
     - For composite foods (an almond croissant, a burger), use one entry if a matching one exists. \
     If only a plainer version exists ("Croissant, plain"), you may add the clearly visible extras \
     as separate items, but never add parts already included in the chosen entry.
-    - Mixed and home-cooked dishes (curries, biryani, tehari, polao, khichuri, dal, haleem, \
-    nihari, korma and similar from any cuisine) are rarely in the databases. Search for the whole \
+    - Mixed and home-cooked dishes from any cuisine (curries, biryani, tehari, polao, dal, haleem, \
+    ramen, pho, pad thai, stir-fries, lasagne, stews, chilli con carne, bibimbap, shakshuka and \
+    similar) are rarely in the databases. Search for the whole \
     dish first, including the user's saved foods. If there's no close match, estimate a typical \
     home-style recipe for the portion shown and log its main ingredients as separate items: the \
     cooked staple (rice, noodles, bread), the protein, vegetables, and the cooking fat. Give every \
