@@ -11,6 +11,7 @@ struct SettingsView: View {
     @AppStorage(SettingsKey.goalEnergyKcal) private var goalEnergy = GoalDefaults.energyKcal
 
     @State private var confirmingLearningReset = false
+    @State private var showingTutorial = false
     @State private var learningVersion = 0
     @State private var usdaKeyInput = ""
     @State private var hasUSDAKey = KeychainStore.read(.usdaAPIKey) != nil
@@ -151,6 +152,15 @@ struct SettingsView: View {
                         }
                     }
                     .padding(.vertical, 4)
+                }
+
+                Section {
+                    Button("How FoodLogger works", systemImage: "questionmark.circle") {
+                        showingTutorial = true
+                    }
+                    .sheet(isPresented: $showingTutorial) {
+                        TutorialView(finishTitle: "Done") { showingTutorial = false }
+                    }
                 }
 
                 Section("Data sources") {

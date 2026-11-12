@@ -4,6 +4,7 @@ import SwiftUI
 struct OnboardingView: View {
     @AppStorage(SettingsKey.userName) private var userName = ""
     @AppStorage(SettingsKey.hasCompletedOnboarding) private var hasCompletedOnboarding = false
+    @AppStorage(SettingsKey.hasSeenTutorial) private var hasSeenTutorial = false
 
     @State private var step = 0
     @State private var nameInput = ""
@@ -17,9 +18,15 @@ struct OnboardingView: View {
                 if step == 0 {
                     welcome
                         .transition(.move(edge: .leading).combined(with: .opacity))
-                } else {
+                } else if step == 1 {
                     goals
                         .transition(.move(edge: .trailing).combined(with: .opacity))
+                } else {
+                    TutorialView {
+                        hasSeenTutorial = true
+                        hasCompletedOnboarding = true
+                    }
+                    .transition(.move(edge: .trailing).combined(with: .opacity))
                 }
             }
             .animation(.easeInOut(duration: 0.3), value: step)
@@ -94,9 +101,9 @@ struct OnboardingView: View {
         }
         .safeAreaInset(edge: .bottom) {
             Button {
-                hasCompletedOnboarding = true
+                step = 2
             } label: {
-                Text("Get started")
+                Text("Next")
                     .font(.headline)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 8)

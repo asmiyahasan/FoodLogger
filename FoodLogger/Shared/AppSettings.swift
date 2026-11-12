@@ -45,6 +45,7 @@ nonisolated enum SettingsKey {
     static let fibreFromCalories = "fibreFromCalories"
     static let userName = "userName"
     static let hasCompletedOnboarding = "hasCompletedOnboarding"
+    static let hasSeenTutorial = "hasSeenTutorial"
     static let waterRemindersOn = "waterRemindersOn"
     static let waterReminderStartHour = "waterReminderStartHour"
     static let waterReminderEndHour = "waterReminderEndHour"

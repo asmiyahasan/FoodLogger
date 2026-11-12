@@ -10,6 +10,7 @@ import SwiftData
 
 struct ContentView: View {
     @AppStorage(SettingsKey.hasCompletedOnboarding) private var hasCompletedOnboarding = false
+    @AppStorage(SettingsKey.hasSeenTutorial) private var hasSeenTutorial = false
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.modelContext) private var context
 
@@ -24,6 +25,12 @@ struct ContentView: View {
             }
         }
         .animation(.easeInOut, value: hasCompletedOnboarding)
+        .sheet(isPresented: Binding(
+            get: { hasCompletedOnboarding && !hasSeenTutorial },
+            set: { if !$0 { hasSeenTutorial = true } }
+        )) {
+            TutorialView { hasSeenTutorial = true }
+        }
         .onChange(of: scenePhase) { _, phase in
             if phase == .active {
                 Task {
