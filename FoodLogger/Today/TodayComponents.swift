@@ -101,6 +101,7 @@ struct WaterCard: View {
                     } label: {
                         Text("+\(size.formatted(.number.precision(.fractionLength(0)))) ml")
                             .font(.subheadline.weight(.semibold))
+                            .foregroundStyle(Theme.turquoiseText)
                             .frame(maxWidth: .infinity)
                     }
                     .buttonStyle(.bordered)

@@ -39,6 +39,7 @@ struct WeightCard: View {
             Button(action: log) {
                 Text(buttonTitle)
                     .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(Theme.deepOrangeText)
                     .frame(maxWidth: .infinity)
             }
             .buttonStyle(.bordered)

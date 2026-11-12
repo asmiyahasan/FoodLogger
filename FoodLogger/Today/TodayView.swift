@@ -261,7 +261,6 @@ struct DayView: View {
                     add: addWater,
                     undo: undoWater
                 )
-                .listRowBackground(Theme.tint)
             }
 
             if showWeight {
