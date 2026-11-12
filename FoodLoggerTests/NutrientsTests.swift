@@ -30,4 +30,11 @@ struct NutrientsTests {
         #expect(MealType.inferred(from: morning, calendar: calendar) == .breakfast)
         #expect(MealType.inferred(from: evening, calendar: calendar) == .dinner)
     }
+
+    @Test func macrosFromCalories() {
+        let goals = MacroGoals.from(energyKcal: 2000, proteinPercent: 20, fatPercent: 30)
+        #expect(goals.protein == 100)   // 400 kcal / 4
+        #expect(goals.carbs == 250)     // 1000 kcal / 4
+        #expect(abs(goals.fat - 66.67) < 0.01) // 600 kcal / 9
+    }
 }

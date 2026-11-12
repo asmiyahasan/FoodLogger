@@ -38,6 +38,10 @@ nonisolated enum SettingsKey {
     static let quickWater1 = "quickWater1"
     static let quickWater2 = "quickWater2"
     static let keepMealPhotos = "keepMealPhotos"
+    static let macrosFromCalories = "macrosFromCalories"
+    static let macroPreset = "macroPreset"
+    static let customProteinPercent = "customProteinPercent"
+    static let customFatPercent = "customFatPercent"
 }
 
 /// Starting values until the user changes them in Settings.
@@ -50,4 +54,6 @@ nonisolated enum GoalDefaults {
     static let waterMl = 2500.0
     static let quickWater1 = 250.0
     static let quickWater2 = 500.0
+    static let customProteinPercent = 25.0
+    static let customFatPercent = 30.0
 }

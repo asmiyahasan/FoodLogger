@@ -83,6 +83,10 @@ struct DayView: View {
     @AppStorage(SettingsKey.goalWaterMl) private var goalWater = GoalDefaults.waterMl
     @AppStorage(SettingsKey.quickWater1) private var quickWater1 = GoalDefaults.quickWater1
     @AppStorage(SettingsKey.quickWater2) private var quickWater2 = GoalDefaults.quickWater2
+    @AppStorage(SettingsKey.macrosFromCalories) private var macrosFromCalories = true
+    @AppStorage(SettingsKey.macroPreset) private var macroPreset: MacroPreset = .balanced
+    @AppStorage(SettingsKey.customProteinPercent) private var customProteinPercent = GoalDefaults.customProteinPercent
+    @AppStorage(SettingsKey.customFatPercent) private var customFatPercent = GoalDefaults.customFatPercent
 
     init(day: Binding<Date>, editingMeal: Binding<Meal?>) {
         _day = day
@@ -100,6 +104,18 @@ struct DayView: View {
     }
 
     private var isToday: Bool { Calendar.current.isDateInToday(day) }
+
+    private var macroGoals: MacroGoals {
+        MacroGoals.effective(
+            fromCalories: macrosFromCalories,
+            energyKcal: goalEnergy,
+            preset: macroPreset,
+            customProteinPercent: customProteinPercent,
+            customFatPercent: customFatPercent,
+            manual: MacroGoals(protein: goalProtein, carbs: goalCarbs, fat: goalFat)
+        )
+    }
+
     private var loggedMeals: [Meal] { meals.filter { $0.status == .logged } }
     private var totals: Nutrients { loggedMeals.reduce(Nutrients.zero) { $0 + $1.totals } }
     private var waterTotal: Double { water.reduce(0) { $0 + $1.millilitres } }
@@ -112,9 +128,9 @@ struct DayView: View {
                     EnergyRing(consumedKcal: totals.energyKcal, goalKcal: goalEnergy, unit: energyUnit)
                         .frame(width: 120, height: 120)
                     VStack(spacing: 10) {
-                        GoalBar(label: "Protein", value: totals.protein, goal: goalProtein, unit: "g")
-                        GoalBar(label: "Carbs", value: totals.carbs, goal: goalCarbs, unit: "g")
-                        GoalBar(label: "Fat", value: totals.fat, goal: goalFat, unit: "g")
+                        GoalBar(label: "Protein", value: totals.protein, goal: macroGoals.protein, unit: "g")
+                        GoalBar(label: "Carbs", value: totals.carbs, goal: macroGoals.carbs, unit: "g")
+                        GoalBar(label: "Fat", value: totals.fat, goal: macroGoals.fat, unit: "g")
                         GoalBar(label: "Fibre", value: totals.fibre, goal: goalFibre, unit: "g")
                     }
                 }

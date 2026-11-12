@@ -15,6 +15,10 @@ struct SettingsView: View {
     @AppStorage(SettingsKey.quickWater1) private var quickWater1 = GoalDefaults.quickWater1
     @AppStorage(SettingsKey.quickWater2) private var quickWater2 = GoalDefaults.quickWater2
     @AppStorage(SettingsKey.keepMealPhotos) private var keepMealPhotos = true
+    @AppStorage(SettingsKey.macrosFromCalories) private var macrosFromCalories = true
+    @AppStorage(SettingsKey.macroPreset) private var macroPreset: MacroPreset = .balanced
+    @AppStorage(SettingsKey.customProteinPercent) private var customProteinPercent = GoalDefaults.customProteinPercent
+    @AppStorage(SettingsKey.customFatPercent) private var customFatPercent = GoalDefaults.customFatPercent
 
     @State private var usdaKeyInput = ""
     @State private var hasUSDAKey = KeychainStore.read(.usdaAPIKey) != nil
@@ -33,11 +37,38 @@ struct SettingsView: View {
 
                 Section("Daily goals") {
                     NumberField(title: "Energy", value: energyGoal, unit: energyUnit.symbol)
-                    NumberField(title: "Protein", value: $goalProtein, unit: "g")
-                    NumberField(title: "Carbs", value: $goalCarbs, unit: "g")
-                    NumberField(title: "Fat", value: $goalFat, unit: "g")
                     NumberField(title: "Fibre", value: $goalFibre, unit: "g")
                     NumberField(title: "Water", value: $goalWater, unit: "ml")
+                }
+
+                Section {
+                    Toggle("Set from calories", isOn: $macrosFromCalories)
+                    if macrosFromCalories {
+                        Picker("Split", selection: $macroPreset) {
+                            ForEach(MacroPreset.allCases) { preset in
+                                Text(preset.label).tag(preset)
+                            }
+                        }
+                        if macroPreset == .custom {
+                            Stepper("Protein \(Int(customProteinPercent))%", value: $customProteinPercent, in: 10...50, step: 5)
+                            Stepper("Fat \(Int(customFatPercent))%", value: $customFatPercent, in: 15...50, step: 5)
+                        }
+                        macroRow("Protein", grams: macroGoals.protein, percent: proteinPercent)
+                        macroRow("Carbs", grams: macroGoals.carbs, percent: 100 - proteinPercent - fatPercent)
+                        macroRow("Fat", grams: macroGoals.fat, percent: fatPercent)
+                    } else {
+                        NumberField(title: "Protein", value: $goalProtein, unit: "g")
+                        NumberField(title: "Carbs", value: $goalCarbs, unit: "g")
+                        NumberField(title: "Fat", value: $goalFat, unit: "g")
+                    }
+                } header: {
+                    Text("Macros")
+                } footer: {
+                    if macrosFromCalories {
+                        Text("Grams update when you change your calorie goal. Protein and carbs have 4 kcal per gram, fat 9.")
+                    } else {
+                        Text("Set exact grams yourself.")
+                    }
                 }
 
                 Section {
@@ -102,6 +133,32 @@ struct SettingsView: View {
                     Button("Done") { dismiss() }
                 }
             }
+        }
+    }
+
+    private var macroGoals: MacroGoals {
+        MacroGoals.effective(
+            fromCalories: macrosFromCalories,
+            energyKcal: goalEnergy,
+            preset: macroPreset,
+            customProteinPercent: customProteinPercent,
+            customFatPercent: customFatPercent,
+            manual: MacroGoals(protein: goalProtein, carbs: goalCarbs, fat: goalFat)
+        )
+    }
+
+    private var proteinPercent: Double {
+        macroPreset.split?.protein ?? customProteinPercent
+    }
+
+    private var fatPercent: Double {
+        macroPreset.split?.fat ?? customFatPercent
+    }
+
+    private func macroRow(_ name: String, grams: Double, percent: Double) -> some View {
+        LabeledContent(name) {
+            Text("\(gramsText(grams.rounded()))  ·  \(Int(percent))%")
+                .monospacedDigit()
         }
     }
 
