@@ -1,3 +1,5 @@
+import CoreGraphics
+import SwiftData
 import SwiftUI
 
 /// Ring showing energy left (or over) against the daily goal.
@@ -148,22 +150,50 @@ struct MealRow: View {
         .contentShape(Rectangle())
     }
 
-    @ViewBuilder
     private var thumbnail: some View {
-        if let data = meal.photo, let image = Image(imageData: data) {
-            image
-                .resizable()
-                .scaledToFill()
-                .frame(width: 48, height: 48)
-                .clipShape(RoundedRectangle(cornerRadius: 12))
-        } else {
-            RoundedRectangle(cornerRadius: 12)
-                .fill(Theme.tint)
-                .frame(width: 48, height: 48)
-                .overlay {
-                    Image(systemName: "fork.knife")
-                        .foregroundStyle(Theme.turquoise)
-                }
+        MealThumbnail(meal: meal)
+    }
+}
+
+/// A meal's photo as a small, cached thumbnail (decoded off the main thread).
+struct MealThumbnail: View {
+    let meal: Meal
+    @State private var image: CGImage?
+    @State private var checked = false
+
+    init(meal: Meal) {
+        self.meal = meal
+        let cached = ThumbnailCache.cached(for: meal)
+        _image = State(initialValue: cached)
+        _checked = State(initialValue: cached != nil)
+    }
+
+    var body: some View {
+        Group {
+            if let image {
+                Image(decorative: image, scale: 1)
+                    .resizable()
+                    .scaledToFill()
+                    .frame(width: 48, height: 48)
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+            } else {
+                placeholder
+            }
         }
+        .task(id: meal.persistentModelID) {
+            guard !checked else { return }
+            image = await ThumbnailCache.thumbnail(for: meal)
+            checked = true
+        }
+    }
+
+    private var placeholder: some View {
+        RoundedRectangle(cornerRadius: 12)
+            .fill(Theme.tint)
+            .frame(width: 48, height: 48)
+            .overlay {
+                Image(systemName: "fork.knife")
+                    .foregroundStyle(Theme.turquoise)
+            }
     }
 }

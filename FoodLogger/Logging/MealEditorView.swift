@@ -1,3 +1,4 @@
+import CoreGraphics
 import SwiftUI
 import SwiftData
 
@@ -13,6 +14,8 @@ struct MealEditorView: View {
     /// From photo + voice capture (new meals only).
     private let photo: Data?
     private let transcript: String
+    /// Decoded once, so typing in the form doesn't re-decode the photo.
+    private let photoThumbnail: CGImage?
 
     @State private var timestamp: Date
     @State private var mealType: MealType
@@ -29,6 +32,7 @@ struct MealEditorView: View {
         self.meal = meal
         self.photo = meal?.photo ?? photo
         self.transcript = meal?.transcript ?? transcript
+        self.photoThumbnail = self.photo.flatMap { ImagePrep.thumbnail($0, maxPixelSize: 216) }
         let time = meal?.timestamp ?? defaultDate
         _timestamp = State(initialValue: time)
         _mealType = State(initialValue: meal?.mealType ?? MealType.inferred(from: time))
@@ -72,8 +76,8 @@ struct MealEditorView: View {
                 if photo != nil || !transcript.isEmpty {
                     Section {
                         HStack(alignment: .top, spacing: 12) {
-                            if let photo, let image = Image(imageData: photo) {
-                                image
+                            if let photoThumbnail {
+                                Image(decorative: photoThumbnail, scale: 1)
                                     .resizable()
                                     .scaledToFill()
                                     .frame(width: 72, height: 72)

@@ -1,3 +1,4 @@
+import CoreGraphics
 import SwiftUI
 import SwiftData
 import PhotosUI
@@ -11,6 +12,8 @@ struct CaptureView: View {
     @Query(sort: \UserFood.lastUsed, order: .reverse) private var myFoods: [UserFood]
 
     @State private var photoData: Data?
+    /// Downsized copy of the photo for the screen; the full photo is only used for upload.
+    @State private var photoPreview: CGImage?
     @State private var libraryItem: PhotosPickerItem?
     @State private var showingCamera = false
     @State private var recorder = SpeechRecorder()
@@ -73,6 +76,14 @@ struct CaptureView: View {
                         libraryItem = nil
                     }
                 }
+                // Keyed on size so SwiftUI doesn't compare megabytes of photo on every redraw.
+                .task(id: photoData?.count) {
+                    guard let data = photoData else { photoPreview = nil; return }
+                    photoPreview = nil
+                    photoPreview = await Task.detached(priority: .userInitiated) {
+                        DecodedImage(ImagePrep.thumbnail(data, maxPixelSize: 900))
+                    }.value.image
+                }
                 .onChange(of: recorder.transcript) { _, text in
                     if recorder.isRecording { transcript = text }
                 }
@@ -84,13 +95,18 @@ struct CaptureView: View {
 
     private var photoSection: some View {
         Section("Photo") {
-            if let photoData, let image = Image(imageData: photoData) {
-                image
-                    .resizable()
-                    .scaledToFit()
-                    .frame(maxHeight: 260)
-                    .frame(maxWidth: .infinity)
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
+            if photoData != nil {
+                if let photoPreview {
+                    Image(decorative: photoPreview, scale: 1)
+                        .resizable()
+                        .scaledToFit()
+                        .frame(maxHeight: 260)
+                        .frame(maxWidth: .infinity)
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                } else {
+                    ProgressView()
+                        .frame(maxWidth: .infinity, minHeight: 160)
+                }
                 Button("Remove photo", systemImage: "xmark", role: .destructive) {
                     self.photoData = nil
                 }
@@ -208,7 +224,10 @@ struct CaptureView: View {
         progress = ""
         defer { isAnalysing = false }
 
-        let upload = photoData.flatMap { ImagePrep.jpegForUpload($0) }
+        let original = photoData
+        let upload = await Task.detached(priority: .userInitiated) {
+            original.flatMap { ImagePrep.jpegForUpload($0) }
+        }.value
         let spoken = transcript
         let parser = ClaudeMealParser(
             apiKey: key,
