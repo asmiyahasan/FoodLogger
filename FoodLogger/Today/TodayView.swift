@@ -39,12 +39,13 @@ struct TodayView: View {
                         Button {
                             showingCapture = true
                         } label: {
-                            Label("Snap a meal", systemImage: "camera")
+                            Label("Snap a meal", systemImage: "camera.fill")
                                 .font(.headline)
                                 .frame(maxWidth: .infinity)
-                                .padding(.vertical, 6)
+                                .padding(.vertical, 8)
                         }
                         .buttonStyle(.borderedProminent)
+                        .buttonBorderShape(.capsule)
 
                         Button {
                             showingNewMeal = true
@@ -56,6 +57,7 @@ struct TodayView: View {
                                 .padding(.horizontal, 4)
                         }
                         .buttonStyle(.bordered)
+                        .buttonBorderShape(.circle)
                         .accessibilityLabel("Log food by typing")
                     }
                     .padding(.horizontal)
@@ -171,7 +173,7 @@ struct DayView: View {
                 .accessibilityHint("Opens your goals")
             }
 
-            Section("Water") {
+            Section {
                 WaterCard(
                     totalMl: waterTotal,
                     goalMl: goalWater,
@@ -180,6 +182,7 @@ struct DayView: View {
                     add: addWater,
                     undo: undoWater
                 )
+                .listRowBackground(Theme.tint)
             }
 
             Section("Meals") {
@@ -224,7 +227,7 @@ struct DayView: View {
             Spacer()
             VStack(spacing: 2) {
                 Text(isToday ? "Today" : day.formatted(.dateTime.weekday(.wide)))
-                    .font(.headline)
+                    .font(.rounded(.title3, weight: .bold))
                 Text(day.formatted(date: .abbreviated, time: .omitted))
                     .font(.caption)
                     .foregroundStyle(.secondary)
@@ -240,6 +243,8 @@ struct DayView: View {
             .accessibilityLabel("Next day")
         }
         .buttonStyle(.borderless)
+        .font(.headline)
+        .tint(Theme.turquoise)
     }
 
     private func shiftDay(by days: Int) {

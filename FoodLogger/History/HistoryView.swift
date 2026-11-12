@@ -203,7 +203,11 @@ struct MonthHistory: View {
                     x: .value("Day", day, unit: .day),
                     y: .value("Energy", energyUnit.value(fromKcal: summaries[day]?.energyKcal ?? 0))
                 )
-                .foregroundStyle(calendar.isDate(day, inSameDayAs: selectedDay) ? Color.accentColor : Color.accentColor.opacity(0.45))
+                .foregroundStyle(
+                    (summaries[day]?.energyKcal ?? 0) > goalEnergy
+                        ? Theme.deepOrange
+                        : Theme.orange.opacity(calendar.isDate(day, inSameDayAs: selectedDay) ? 1 : 0.5)
+                )
                 .cornerRadius(4)
             }
             RuleMark(y: .value("Goal", energyUnit.value(fromKcal: goalEnergy)))
@@ -245,7 +249,7 @@ struct MonthHistory: View {
     private func stat(_ value: String, _ label: String) -> some View {
         VStack(spacing: 2) {
             Text(value)
-                .font(.headline)
+                .font(.rounded(.headline))
                 .monospacedDigit()
             Text(label)
                 .font(.caption)

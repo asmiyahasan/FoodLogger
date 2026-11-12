@@ -212,12 +212,7 @@ struct DraftItemRow: View {
                 HStack(spacing: 6) {
                     Text(item.name.isEmpty ? "Unnamed item" : item.name)
                     if item.needsCheck {
-                        Text("Check")
-                            .font(.caption2.weight(.semibold))
-                            .padding(.horizontal, 6)
-                            .padding(.vertical, 1)
-                            .overlay(Capsule().stroke(Color.orange))
-                            .foregroundStyle(.orange)
+                        TagLabel(text: "Check")
                     }
                 }
                 Text(detail)
@@ -226,12 +221,12 @@ struct DraftItemRow: View {
                 if !item.note.isEmpty {
                     Text(item.note)
                         .font(.caption)
-                        .foregroundStyle(.orange)
+                        .foregroundStyle(Theme.deepOrangeText)
                 }
             }
             Spacer()
             Text(unit.format(kcal: item.nutrients.energyKcal))
-                .font(.subheadline)
+                .font(.rounded(.subheadline))
                 .monospacedDigit()
         }
         .contentShape(Rectangle())

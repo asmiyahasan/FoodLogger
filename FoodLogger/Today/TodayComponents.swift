@@ -8,24 +8,27 @@ struct EnergyRing: View {
 
     private var progress: Double { goalKcal > 0 ? min(consumedKcal / goalKcal, 1) : 0 }
     private var remainingKcal: Double { goalKcal - consumedKcal }
+    private var isOver: Bool { remainingKcal < 0 }
 
     var body: some View {
         ZStack {
             Circle()
-                .stroke(.quaternary, lineWidth: 12)
+                .stroke(Theme.orangeTrack, lineWidth: 13)
             Circle()
                 .trim(from: 0, to: progress)
                 .stroke(
-                    remainingKcal >= 0 ? Color.accentColor : Color.orange,
-                    style: StrokeStyle(lineWidth: 12, lineCap: .round)
+                    isOver ? Theme.deepOrange : Theme.orange,
+                    style: StrokeStyle(lineWidth: 13, lineCap: .round)
                 )
                 .rotationEffect(.degrees(-90))
-                .animation(.easeOut, value: progress)
-            VStack(spacing: 2) {
+                .animation(.easeOut(duration: 0.5), value: progress)
+            VStack(spacing: 0) {
                 Text(unit.value(fromKcal: abs(remainingKcal)).formatted(.number.precision(.fractionLength(0))))
-                    .font(.title2.bold())
+                    .font(.rounded(.title, weight: .bold))
                     .monospacedDigit()
-                Text(remainingKcal >= 0 ? "\(unit.symbol) left" : "\(unit.symbol) over")
+                    .contentTransition(.numericText())
+                    .foregroundStyle(isOver ? Theme.deepOrangeText : Color.primary)
+                Text(isOver ? "\(unit.symbol) over" : "\(unit.symbol) left")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -34,25 +37,30 @@ struct EnergyRing: View {
     }
 }
 
-/// One nutrient against its goal, e.g. "Protein 68 / 100 g".
+/// One nutrient against its goal, e.g. "Protein 68 / 100 g". Turns deep orange when over.
 struct GoalBar: View {
     let label: String
     let value: Double
     let goal: Double
     let unit: String
 
+    private var fraction: Double { goal > 0 ? value / goal : 0 }
+    private var isOver: Bool { fraction > 1.0001 }
+
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            HStack {
+        VStack(alignment: .leading, spacing: 5) {
+            HStack(alignment: .firstTextBaseline) {
                 Text(label)
+                    .font(.subheadline.weight(.medium))
                 Spacer()
                 Text("\(Self.whole(value)) / \(Self.whole(goal)) \(unit)")
-                    .foregroundStyle(.secondary)
+                    .font(.rounded(.caption, weight: .medium))
+                    .foregroundStyle(isOver ? Theme.deepOrangeText : Color.secondary)
                     .monospacedDigit()
             }
-            .font(.caption)
-            ProgressView(value: goal > 0 ? min(value / goal, 1) : 0)
+            GoalProgressBar(fraction: fraction)
         }
+        .accessibilityElement(children: .combine)
     }
 
     static func whole(_ value: Double) -> String {
@@ -70,36 +78,44 @@ struct WaterCard: View {
     let undo: () -> Void
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack {
-                Image(systemName: "drop.fill")
-                    .foregroundStyle(.blue)
-                Text("\(litresText(totalMl)) of \(litresText(goalMl)) L")
-                    .monospacedDigit()
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(alignment: .firstTextBaseline) {
+                Label("Water", systemImage: "drop.fill")
+                    .font(.headline)
+                    .foregroundStyle(Theme.turquoiseText)
                 Spacer()
+                Text("\(litresText(totalMl)) of \(litresText(goalMl)) L")
+                    .font(.rounded(.subheadline))
+                    .foregroundStyle(Theme.turquoiseText)
+                    .monospacedDigit()
+                    .contentTransition(.numericText())
             }
-            ProgressView(value: goalMl > 0 ? min(totalMl / goalMl, 1) : 0)
-                .tint(.blue)
+            GoalProgressBar(fraction: goalMl > 0 ? min(totalMl / goalMl, 1) : 0, height: 8)
             // An explicit button style keeps each button tappable on its own inside a List row.
-            HStack {
+            HStack(spacing: 8) {
                 ForEach(Array(quickSizes.enumerated()), id: \.offset) { _, size in
                     Button {
                         add(size)
                     } label: {
                         Text("+\(size.formatted(.number.precision(.fractionLength(0)))) ml")
+                            .font(.subheadline.weight(.semibold))
                             .frame(maxWidth: .infinity)
                     }
                     .buttonStyle(.bordered)
+                    .buttonBorderShape(.capsule)
                 }
                 Button("Undo", systemImage: "arrow.uturn.backward") {
                     undo()
                 }
                 .labelStyle(.iconOnly)
                 .buttonStyle(.bordered)
+                .buttonBorderShape(.circle)
                 .disabled(!canUndo)
             }
+            .tint(Theme.turquoise)
         }
-        .padding(.vertical, 4)
+        .padding(.vertical, 6)
+        .sensoryFeedback(.increase, trigger: totalMl)
     }
 }
 
@@ -113,6 +129,7 @@ struct MealRow: View {
             thumbnail
             VStack(alignment: .leading, spacing: 2) {
                 Text(meal.title)
+                    .font(.body.weight(.medium))
                     .lineLimit(1)
                 Text("\(meal.mealType.label) · \(meal.timestamp.formatted(date: .omitted, time: .shortened))")
                     .font(.caption)
@@ -121,14 +138,13 @@ struct MealRow: View {
             Spacer()
             if meal.status == .logged {
                 Text(unit.format(kcal: meal.totals.energyKcal))
-                    .font(.subheadline)
+                    .font(.rounded(.subheadline))
                     .monospacedDigit()
             } else {
-                Text(meal.status == .pending ? "Pending" : "Review")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
+                TagLabel(text: meal.status == .pending ? "Pending" : "Review")
             }
         }
+        .padding(.vertical, 2)
         .contentShape(Rectangle())
     }
 
@@ -138,15 +154,15 @@ struct MealRow: View {
             image
                 .resizable()
                 .scaledToFill()
-                .frame(width: 44, height: 44)
-                .clipShape(RoundedRectangle(cornerRadius: 8))
+                .frame(width: 48, height: 48)
+                .clipShape(RoundedRectangle(cornerRadius: 12))
         } else {
-            RoundedRectangle(cornerRadius: 8)
-                .fill(.quaternary)
-                .frame(width: 44, height: 44)
+            RoundedRectangle(cornerRadius: 12)
+                .fill(Theme.tint)
+                .frame(width: 48, height: 48)
                 .overlay {
                     Image(systemName: "fork.knife")
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(Theme.turquoise)
                 }
         }
     }

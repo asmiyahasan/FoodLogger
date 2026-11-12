@@ -13,6 +13,7 @@ struct FoodLoggerApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView()
+                .tint(Theme.turquoise)
         }
         .modelContainer(for: [Meal.self, MealItem.self, UserFood.self, WaterEntry.self])
     }
