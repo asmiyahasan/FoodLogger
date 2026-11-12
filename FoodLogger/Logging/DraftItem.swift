@@ -22,6 +22,8 @@ struct DraftItem: Identifiable, Hashable {
     /// Household measures for this food, and the one chosen ("" = grams).
     var measures: [PortionUnit] = []
     var unitName = ""
+    /// Claude's original photo estimate in grams, before any learned adjustment (0 if not estimated).
+    var aiGrams: Double = 0
 
     var nutrients: Nutrients { per100g.scaled(by: grams / 100) }
     var isFromMyFoods: Bool { foodID.hasPrefix("user:") }
@@ -88,6 +90,7 @@ extension DraftItem {
         }
         note = parsed.food == nil ? "No match found. Tap to search." : parsed.note
         dish = parsed.dish
+        aiGrams = parsed.grams
         measures = parsed.measures
         if let serving = parsed.food?.servingGrams, serving > 0, !measures.contains(where: { $0.name == "serving" }) {
             measures.append(PortionUnit(name: "serving", grams: serving))

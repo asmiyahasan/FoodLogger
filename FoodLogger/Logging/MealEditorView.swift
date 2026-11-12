@@ -268,6 +268,13 @@ struct MealEditorView: View {
             }
             food.preferredUnit = draft.unitName
 
+            // Learn how your real portion compares with Claude's photo estimate.
+            if draft.origin == .photo, countUse,
+               let observed = PortionLearning.observedRatio(final: draft.grams, estimate: draft.aiGrams) {
+                PortionLearning.record(observed, on: food)
+                PortionLearning.recordOverall(observed)
+            }
+
             // Other names for it ("chilli jam" for your Beerenberg jar) so it matches next time.
             for alias in [name, draft.matchedName] where !alias.isEmpty {
                 let isNew = alias.localizedCaseInsensitiveCompare(food.name) != .orderedSame
@@ -299,6 +306,13 @@ struct MealEditorView: View {
             food.defaultGrams = totalGrams
             food.lastUsed = .now
             food.brand = "My recipe"
+
+            // The dish's portion learns as a whole.
+            let estimate = group.reduce(0) { $0 + $1.aiGrams }
+            if countUse, let observed = PortionLearning.observedRatio(final: totalGrams, estimate: estimate) {
+                PortionLearning.record(observed, on: food)
+                PortionLearning.recordOverall(observed)
+            }
         }
     }
 }

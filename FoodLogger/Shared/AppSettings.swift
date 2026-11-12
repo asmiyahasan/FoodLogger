@@ -54,6 +54,8 @@ nonisolated enum SettingsKey {
     static let backupIncludesPhotos = "backupIncludesPhotos"
     static let plates = "plates"
     static let lastPlateID = "lastPlateID"
+    static let portionCorrectionAll = "portionCorrectionAll"
+    static let portionCorrectionSamples = "portionCorrectionSamples"
 
     /// Settings saved in a backup (goals, preferences, name, reminders).
     static let backedUp: [String] = [
@@ -61,7 +63,7 @@ nonisolated enum SettingsKey {
         quickWater1, quickWater2, keepMealPhotos, macrosFromCalories, macroPreset,
         customProteinPercent, customFatPercent, fibreFromCalories, userName,
         waterRemindersOn, waterReminderStartHour, waterReminderEndHour, waterReminderIntervalHours,
-        backupIncludesPhotos, plates,
+        backupIncludesPhotos, plates, portionCorrectionAll, portionCorrectionSamples,
     ]
 }
 

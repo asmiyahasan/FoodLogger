@@ -80,6 +80,8 @@ nonisolated struct SavedFoodRecord: Codable, Sendable {
     var brand: String?
     var measures: [PortionUnit]?
     var preferredUnit: String?
+    var portionCorrection: Double?
+    var correctionSamples: Int?
     var aliases: [String]
     var nutrientsPer100g: Nutrients
     var defaultGrams: Double
@@ -157,7 +159,9 @@ enum BackupService {
             savedFoods: foods.map { food in
                 SavedFoodRecord(
                     uuid: food.uuid, name: food.name, brand: food.brand,
-                    measures: food.measures, preferredUnit: food.preferredUnit, aliases: food.aliases,
+                    measures: food.measures, preferredUnit: food.preferredUnit,
+                    portionCorrection: food.portionCorrection, correctionSamples: food.correctionSamples,
+                    aliases: food.aliases,
                     nutrientsPer100g: food.nutrientsPer100g, defaultGrams: food.defaultGrams,
                     basedOnFoodID: food.basedOnFoodID, timesUsed: food.timesUsed,
                     lastUsed: food.lastUsed, createdAt: food.createdAt
@@ -225,6 +229,8 @@ enum BackupService {
             food.brand = record.brand ?? ""
             food.measures = record.measures ?? []
             food.preferredUnit = record.preferredUnit ?? ""
+            food.portionCorrection = record.portionCorrection ?? 1
+            food.correctionSamples = record.correctionSamples ?? 0
             food.aliases = record.aliases
             food.timesUsed = record.timesUsed
             food.lastUsed = record.lastUsed

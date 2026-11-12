@@ -224,7 +224,7 @@ struct CaptureView: View {
         do {
             let items = try await parser.parse(imageJPEG: upload, transcript: spoken, sizeReference: plateContext)
             review = Review(
-                drafts: items.map { DraftItem(parsed: $0) },
+                drafts: PortionLearning.apply(to: items.map { DraftItem(parsed: $0) }, savedFoods: myFoods),
                 photo: upload,
                 transcript: spoken
             )

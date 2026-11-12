@@ -10,6 +10,8 @@ struct SettingsView: View {
     @AppStorage(SettingsKey.keepMealPhotos) private var keepMealPhotos = true
     @AppStorage(SettingsKey.goalEnergyKcal) private var goalEnergy = GoalDefaults.energyKcal
 
+    @State private var confirmingLearningReset = false
+    @State private var learningVersion = 0
     @State private var usdaKeyInput = ""
     @State private var hasUSDAKey = KeychainStore.read(.usdaAPIKey) != nil
     private let usdaKeyInSecretsFile = APIKeys.fromSecretsFile(.usdaAPIKey) != nil
@@ -52,6 +54,30 @@ struct SettingsView: View {
                     }
                 } footer: {
                     Text("Your real plate sizes help Claude judge portions in photos.")
+                }
+
+                Section {
+                    LabeledContent("Your portions vs photo estimates") {
+                        Text(learningSummary)
+                            .monospacedDigit()
+                            .id(learningVersion)
+                    }
+                    Button("Reset learning", role: .destructive) {
+                        confirmingLearningReset = true
+                    }
+                    .disabled(PortionLearning.overallSamples == 0)
+                    .confirmationDialog("Reset portion learning?", isPresented: $confirmingLearningReset, titleVisibility: .visible) {
+                        Button("Reset", role: .destructive) {
+                            PortionLearning.reset(savedFoods: myFoods)
+                            learningVersion += 1
+                        }
+                    } message: {
+                        Text("Photo estimates go back to Claude's unadjusted guesses until it learns again.")
+                    }
+                } header: {
+                    Text("Portion learning")
+                } footer: {
+                    Text("When you correct a photo estimate, FoodLogger learns your usual portions and adjusts future estimates, per food and overall. Amounts you say out loud are never adjusted.")
                 }
 
                 Section {
@@ -147,6 +173,17 @@ struct SettingsView: View {
 }
 
 extension SettingsView {
+    var learningSummary: String {
+        let samples = PortionLearning.overallSamples
+        guard samples > 0 else { return "Not enough meals yet" }
+        if samples < PortionLearning.samplesNeededOverall {
+            return "Learning (\(samples) of \(PortionLearning.samplesNeededOverall) meals)"
+        }
+        let percent = Int(((PortionLearning.overallFactor - 1) * 100).rounded())
+        let change = percent == 0 ? "about the same" : (percent > 0 ? "+\(percent)%" : "\(percent)%")
+        return "\(change) · \(samples) meals"
+    }
+
     static var appVersion: String {
         let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0"
         let build = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "1"

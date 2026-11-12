@@ -9,6 +9,9 @@ final class UserFood {
     var brand: String = ""
     var measures: [PortionUnit] = []
     var preferredUnit: String = ""
+    /// How your real portions compare with Claude's photo estimates (1.3 = 30% more).
+    var portionCorrection: Double = 1
+    var correctionSamples: Int = 0
     var aliases: [String] = []
     var nutrientsPer100g: Nutrients = Nutrients()
     var defaultGrams: Double = 100
