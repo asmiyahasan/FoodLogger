@@ -8,6 +8,8 @@ nonisolated struct ParsedMealItem: Sendable {
     var origin: ItemOrigin
     var confidence: Double
     var note: String
+    /// Set for ingredients estimated from a recipe ("Beef tehari").
+    var dish: String
 }
 
 nonisolated enum MealParserError: LocalizedError {
@@ -183,7 +185,8 @@ nonisolated struct ClaudeMealParser: Sendable {
                 food: found[foodID],   // an ID Claude didn't get from a search is treated as no match
                 origin: ItemOrigin(rawValue: item["origin"] as? String ?? "") ?? .photo,
                 confidence: min(max((item["confidence"] as? Double) ?? 0.5, 0), 1),
-                note: item["note"] as? String ?? ""
+                note: item["note"] as? String ?? "",
+                dish: (item["dish"] as? String ?? "").trimmingCharacters(in: .whitespaces)
             )
         }
     }
@@ -205,6 +208,17 @@ nonisolated struct ClaudeMealParser: Sendable {
     - For composite foods (an almond croissant, a burger), use one entry if a matching one exists. \
     If only a plainer version exists ("Croissant, plain"), you may add the clearly visible extras \
     as separate items, but never add parts already included in the chosen entry.
+    - Mixed and home-cooked dishes (curries, biryani, tehari, polao, khichuri, dal, haleem, \
+    nihari, korma and similar from any cuisine) are rarely in the databases. Search for the whole \
+    dish first, including the user's saved foods. If there's no close match, estimate a typical \
+    home-style recipe for the portion shown and log its main ingredients as separate items: the \
+    cooked staple (rice, noodles, bread), the protein, vegetables, and the cooking fat. Give every \
+    ingredient the same "dish" name (e.g. "Beef tehari") so they're shown together. Grams must \
+    add up to the whole portion. Use cooked forms (cooked rice, cooked beef).
+    - Always list the cooking fat (oil or ghee) as its own ingredient, since it's where much of \
+    the energy in these dishes is. Mark it origin "inferred" with a note such as "How much ghee \
+    or oil? Home-style tehari often uses 1–2 tbsp per plate."
+    - Recipe estimates get confidence 0.6 or less, as amounts vary between cooks.
     - Never invent nutrition values. You only choose food_ids from search results and estimate grams. \
     If nothing suitable is found after two searches, submit the item with food_id "".
     - Estimate grams for the whole amount eaten, using typical weights unless the photo suggests \
@@ -249,6 +263,7 @@ nonisolated struct ClaudeMealParser: Sendable {
                                 "origin": ["type": "string", "enum": ["voice", "photo", "inferred"]],
                                 "confidence": ["type": "number", "description": "0 to 1."],
                                 "note": ["type": "string", "description": "Optional short question or caveat for the user."],
+                                "dish": ["type": "string", "description": "For ingredients estimated from a recipe: the dish they belong to, e.g. \"Beef tehari\". Empty otherwise."],
                             ],
                             "required": ["name", "food_id", "grams", "origin", "confidence"],
                         ],

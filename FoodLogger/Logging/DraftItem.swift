@@ -17,6 +17,8 @@ struct DraftItem: Identifiable, Hashable {
     /// The database entry's own name, e.g. "Egg, chicken, whole, fried".
     var matchedName = ""
     var brand = ""
+    /// The dish this ingredient belongs to, if estimated from a recipe.
+    var dish = ""
 
     var nutrients: Nutrients { per100g.scaled(by: grams / 100) }
     var isFromMyFoods: Bool { foodID.hasPrefix("user:") }
@@ -33,7 +35,8 @@ extension DraftItem {
             foodID: item.foodID,
             sourceLabel: item.sourceLabel,
             origin: item.origin,
-            confidence: item.confidence
+            confidence: item.confidence,
+            dish: item.dish
         )
     }
 }
@@ -64,5 +67,6 @@ extension DraftItem {
             )
         }
         note = parsed.food == nil ? "No match found. Tap to search." : parsed.note
+        dish = parsed.dish
     }
 }

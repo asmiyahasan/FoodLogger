@@ -37,6 +37,33 @@ struct MealEditorView: View {
 
     private var itemsToCheck: Int { items.filter(\.needsCheck).count }
 
+    /// Dishes estimated from a recipe, in the order they appear.
+    private var dishNames: [String] {
+        var seen = Set<String>()
+        return items.map(\.dish).filter { !$0.isEmpty && seen.insert($0).inserted }
+    }
+
+    private var ungroupedItems: [DraftItem] { items.filter { $0.dish.isEmpty } }
+
+    private func dishGrams(_ dish: String) -> Double {
+        items.filter { $0.dish == dish }.reduce(0) { $0 + $1.grams }
+    }
+
+    /// Changing a dish's portion scales all its ingredients together.
+    private func portionBinding(for dish: String) -> Binding<Double> {
+        Binding(
+            get: { dishGrams(dish) },
+            set: { newTotal in
+                let oldTotal = dishGrams(dish)
+                guard oldTotal > 0, newTotal > 0 else { return }
+                let factor = newTotal / oldTotal
+                for index in items.indices where items[index].dish == dish {
+                    items[index].grams = (items[index].grams * factor).rounded()
+                }
+            }
+        )
+    }
+
     private var totals: Nutrients { items.reduce(Nutrients.zero) { $0 + $1.nutrients } }
 
     var body: some View {
@@ -74,12 +101,39 @@ struct MealEditorView: View {
                     DatePicker("Time", selection: $timestamp)
                 }
 
-                Section("Items") {
+                ForEach(dishNames, id: \.self) { dish in
+                    let group = items.filter { $0.dish == dish }
+                    Section {
+                        DishHeaderRow(
+                            name: dish,
+                            totals: group.reduce(Nutrients.zero) { $0 + $1.nutrients },
+                            portion: portionBinding(for: dish),
+                            unit: energyUnit
+                        )
+                        ForEach(group) { item in
+                            Button {
+                                editingItem = item
+                            } label: {
+                                DraftItemRow(item: item, unit: energyUnit)
+                                    .padding(.leading, 12)
+                            }
+                            .buttonStyle(.plain)
+                        }
+                        .onDelete { offsets in
+                            let ids = offsets.map { group[$0].id }
+                            items.removeAll { ids.contains($0.id) }
+                        }
+                    } header: {
+                        Text("Estimated recipe")
+                    }
+                }
+
+                Section(dishNames.isEmpty ? "Items" : "Other items") {
                     if items.isEmpty {
                         Text("No items yet")
                             .foregroundStyle(.secondary)
                     }
-                    ForEach(items) { item in
+                    ForEach(ungroupedItems) { item in
                         Button {
                             editingItem = item
                         } label: {
@@ -88,7 +142,8 @@ struct MealEditorView: View {
                         .buttonStyle(.plain)
                     }
                     .onDelete { offsets in
-                        items.remove(atOffsets: offsets)
+                        let ids = offsets.map { ungroupedItems[$0].id }
+                        items.removeAll { ids.contains($0.id) }
                     }
                     Button("Add item", systemImage: "plus") {
                         editingItem = DraftItem()
@@ -157,7 +212,8 @@ struct MealEditorView: View {
                 sourceLabel: draft.sourceLabel,
                 origin: draft.origin,
                 confidence: draft.confidence,
-                position: index
+                position: index,
+                dish: draft.dish
             )
             context.insert(item)
             item.meal = target
@@ -172,7 +228,7 @@ struct MealEditorView: View {
     /// how often you have it, and the words used for it.
     private func updateMyFoods(countUse: Bool) {
         var existing = (try? context.fetch(FetchDescriptor<UserFood>())) ?? []
-        for draft in items where draft.saveToMyFoods || draft.isFromMyFoods {
+        for draft in items where draft.dish.isEmpty && (draft.saveToMyFoods || draft.isFromMyFoods) {
             let name = draft.name.trimmingCharacters(in: .whitespaces)
             // Skip unmatched items with no values: there's nothing useful to remember yet.
             guard !name.isEmpty, draft.isFromMyFoods || draft.per100g.energyKcal > 0 else { continue }
@@ -209,6 +265,61 @@ struct MealEditorView: View {
                 if isNew { food.aliases.append(alias) }
             }
         }
+
+        // Each estimated dish becomes one remembered food: your version of the recipe.
+        for dish in dishNames {
+            let group = items.filter { $0.dish == dish }
+            guard group.contains(where: \.saveToMyFoods) else { continue }
+            let totalGrams = group.reduce(0) { $0 + $1.grams }
+            guard totalGrams > 0 else { continue }
+            let combined = group.reduce(Nutrients.zero) { $0 + $1.nutrients }
+            let per100g = combined.scaled(by: 100 / totalGrams)
+
+            let food: UserFood
+            if let match = existing.first(where: { $0.name.localizedCaseInsensitiveCompare(dish) == .orderedSame }) {
+                food = match
+            } else {
+                food = UserFood(name: dish, nutrientsPer100g: per100g, defaultGrams: totalGrams, basedOnFoodID: "recipe")
+                context.insert(food)
+                existing.append(food)
+                food.timesUsed = 0
+            }
+            if countUse || food.timesUsed == 0 { food.timesUsed += 1 }
+            food.nutrientsPer100g = per100g
+            food.defaultGrams = totalGrams
+            food.lastUsed = .now
+            food.brand = "My recipe"
+        }
+    }
+}
+
+/// The heading for an estimated dish: name, energy, and a portion stepper that scales its ingredients.
+struct DishHeaderRow: View {
+    let name: String
+    let totals: Nutrients
+    @Binding var portion: Double
+    let unit: EnergyUnit
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(alignment: .firstTextBaseline) {
+                Text(name)
+                    .font(.headline)
+                Spacer()
+                Text(unit.format(kcal: totals.energyKcal))
+                    .font(.rounded(.subheadline))
+                    .monospacedDigit()
+            }
+            Stepper(value: $portion, in: 25...3000, step: 25) {
+                Text("Portion \(gramsText(portion))")
+                    .font(.subheadline)
+                    .monospacedDigit()
+            }
+            Text("Estimated from a typical home-style recipe. Tap an ingredient to adjust it.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+        .padding(.vertical, 4)
     }
 }
 

@@ -41,7 +41,10 @@ final class Meal {
 
     /// A short name for lists, built from the item names.
     var title: String {
-        let names = sortedItems.map(\.name).filter { !$0.isEmpty }
+        var seen = Set<String>()
+        let names = sortedItems
+            .map { $0.dish.isEmpty ? $0.name : $0.dish }
+            .filter { !$0.isEmpty && seen.insert($0).inserted }
         switch names.count {
         case 0: return mealType.label
         case 1, 2: return names.joined(separator: " and ")
@@ -60,6 +63,8 @@ final class MealItem {
     var originRaw: String = ItemOrigin.user.rawValue
     var confidence: Double = 1
     var position: Int = 0
+    /// For ingredients estimated from a recipe: the dish they make up, e.g. "Beef tehari".
+    var dish: String = ""
     /// Copied when logged, so history never changes if a database updates.
     var nutrientsPer100g: Nutrients = Nutrients()
     var meal: Meal?
@@ -72,7 +77,8 @@ final class MealItem {
         sourceLabel: String = "Entered manually",
         origin: ItemOrigin = .user,
         confidence: Double = 1,
-        position: Int = 0
+        position: Int = 0,
+        dish: String = ""
     ) {
         self.name = name
         self.grams = grams
@@ -82,6 +88,7 @@ final class MealItem {
         self.originRaw = origin.rawValue
         self.confidence = confidence
         self.position = position
+        self.dish = dish
     }
 
     var origin: ItemOrigin {

@@ -64,6 +64,7 @@ nonisolated struct ItemRecord: Codable, Sendable {
     var confidence: Double
     var position: Int
     var nutrientsPer100g: Nutrients
+    var dish: String?
 }
 
 nonisolated struct WaterRecord: Codable, Sendable {
@@ -142,7 +143,7 @@ enum BackupService {
                             name: item.name, grams: item.grams, foodID: item.foodID,
                             sourceLabel: item.sourceLabel, origin: item.originRaw,
                             confidence: item.confidence, position: item.position,
-                            nutrientsPer100g: item.nutrientsPer100g
+                            nutrientsPer100g: item.nutrientsPer100g, dish: item.dish
                         )
                     }
                 )
@@ -195,7 +196,8 @@ enum BackupService {
                     sourceLabel: itemRecord.sourceLabel,
                     origin: ItemOrigin(rawValue: itemRecord.origin) ?? .user,
                     confidence: itemRecord.confidence,
-                    position: itemRecord.position
+                    position: itemRecord.position,
+                    dish: itemRecord.dish ?? ""
                 )
                 context.insert(item)
                 item.meal = meal

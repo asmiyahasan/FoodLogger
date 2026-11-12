@@ -369,7 +369,8 @@ struct DayView: View {
                 sourceLabel: item.sourceLabel,
                 origin: item.origin,
                 confidence: item.confidence,
-                position: item.position
+                position: item.position,
+                dish: item.dish
             )
             context.insert(newItem)
             newItem.meal = copy
