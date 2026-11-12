@@ -8,6 +8,7 @@ struct TodayView: View {
     @State private var showingCapture = false
     @State private var showingSettings = false
     @State private var showingGoals = false
+    @State private var showingHistory = false
     @State private var editingMeal: Meal?
 
     var body: some View {
@@ -17,6 +18,11 @@ struct TodayView: View {
                 .navigationTitle("FoodLogger")
                 .inlineNavigationTitle()
                 .toolbar {
+                    ToolbarItem(placement: .navigation) {
+                        Button("History", systemImage: "calendar") {
+                            showingHistory = true
+                        }
+                    }
                     ToolbarItem(placement: .primaryAction) {
                         Button("Goals", systemImage: "target") {
                             showingGoals = true
@@ -64,6 +70,11 @@ struct TodayView: View {
         }
         .sheet(item: $editingMeal) { meal in
             MealEditorView(meal: meal)
+        }
+        .sheet(isPresented: $showingHistory) {
+            HistoryView { picked in
+                day = Calendar.current.startOfDay(for: picked)
+            }
         }
         .sheet(isPresented: $showingGoals) {
             NavigationStack {
