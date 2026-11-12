@@ -7,6 +7,7 @@ struct TodayView: View {
     @State private var showingNewMeal = false
     @State private var showingCapture = false
     @State private var showingBarcode = false
+    @AppStorage(SettingsKey.pendingLaunchAction) private var pendingLaunchAction = ""
     @State private var showingSettings = false
     @State private var showingGoals = false
     @State private var showingHistory = false
@@ -80,6 +81,8 @@ struct TodayView: View {
                     .padding(.bottom, 8)
                 }
         }
+        .onAppear(perform: handleLaunchAction)
+        .onChange(of: pendingLaunchAction) { handleLaunchAction() }
         .sheet(isPresented: $showingBarcode) {
             BarcodeLogView(defaultDate: DayView.entryTimestamp(for: day))
         }
@@ -110,6 +113,16 @@ struct TodayView: View {
         .sheet(isPresented: $showingSettings) {
             SettingsView()
         }
+    }
+}
+
+extension TodayView {
+    /// Opens the camera when the app was launched by "Snap a meal" (Siri or Shortcuts).
+    func handleLaunchAction() {
+        guard pendingLaunchAction == "capture" else { return }
+        pendingLaunchAction = ""
+        day = Calendar.current.startOfDay(for: .now)
+        showingCapture = true
     }
 }
 

@@ -14,11 +14,7 @@ struct FoodLoggerApp: App {
     let container: ModelContainer
 
     init() {
-        do {
-            container = try ModelContainer(for: Meal.self, MealItem.self, UserFood.self, WaterEntry.self)
-        } catch {
-            fatalError("Couldn't open the FoodLogger database: \(error)")
-        }
+        container = SharedStore.container
         // Lets reminder buttons (+250 ml) log water straight into the database.
         NotificationHandler.shared.container = container
         UNUserNotificationCenter.current().delegate = NotificationHandler.shared

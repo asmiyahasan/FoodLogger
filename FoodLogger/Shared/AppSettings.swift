@@ -49,6 +49,7 @@ nonisolated enum SettingsKey {
     static let waterReminderStartHour = "waterReminderStartHour"
     static let waterReminderEndHour = "waterReminderEndHour"
     static let waterReminderIntervalHours = "waterReminderIntervalHours"
+    static let pendingLaunchAction = "pendingLaunchAction"
 }
 
 /// Starting values until the user changes them in Settings.
