@@ -137,6 +137,12 @@ struct DayView: View {
     @Environment(\.modelContext) private var context
     @Query private var meals: [Meal]
     @Query private var water: [WaterEntry]
+    @Query(sort: \WeightEntry.timestamp) private var weights: [WeightEntry]
+
+    @AppStorage(SettingsKey.showWeightOnToday) private var showWeight = true
+    @AppStorage(SettingsKey.weightUnit) private var weightUnit: WeightUnit = .kg
+    @AppStorage(SettingsKey.goalWeightKg) private var goalWeightKg = 0.0
+    @State private var showingWeightEntry = false
 
     @AppStorage(SettingsKey.userName) private var userName = ""
     @AppStorage(SettingsKey.energyUnit) private var energyUnit: EnergyUnit = .kcal
@@ -257,6 +263,12 @@ struct DayView: View {
                 .listRowBackground(Theme.tint)
             }
 
+            if showWeight {
+                Section {
+                    weightCard
+                }
+            }
+
             Section("Meals") {
                 if meals.isEmpty {
                     Text("Nothing logged yet. Tap Snap a meal to add one.")
@@ -285,6 +297,25 @@ struct DayView: View {
                 }
             }
         }
+        .sheet(isPresented: $showingWeightEntry) {
+            WeightEntrySheet(day: day)
+        }
+    }
+
+    private var weightCard: some View {
+        // Only the weigh-ins up to the day being viewed count.
+        let points = WeightTrend.points(from: weights.map(\.reading))
+            .filter { $0.date <= Calendar.current.startOfDay(for: day) }
+        let point = points.last
+        return WeightCard(
+            point: point,
+            loggedOnDay: point.map { Calendar.current.isDate($0.date, inSameDayAs: day) } ?? false,
+            weeklyRate: WeightTrend.weeklyRate(points),
+            goalKg: goalWeightKg,
+            unit: weightUnit,
+            isToday: isToday,
+            log: { showingWeightEntry = true }
+        )
     }
 
     private var dayPicker: some View {
@@ -384,5 +415,5 @@ struct DayView: View {
 
 #Preview {
     TodayView()
-        .modelContainer(for: [Meal.self, MealItem.self, UserFood.self, WaterEntry.self], inMemory: true)
+        .modelContainer(for: [Meal.self, MealItem.self, UserFood.self, WaterEntry.self, WeightEntry.self], inMemory: true)
 }

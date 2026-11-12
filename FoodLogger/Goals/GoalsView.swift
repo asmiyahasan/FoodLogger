@@ -26,6 +26,10 @@ struct GoalsView: View {
     @AppStorage(SettingsKey.waterReminderStartHour) private var reminderStart = GoalDefaults.reminderStartHour
     @AppStorage(SettingsKey.waterReminderEndHour) private var reminderEnd = GoalDefaults.reminderEndHour
     @AppStorage(SettingsKey.waterReminderIntervalHours) private var reminderInterval = GoalDefaults.reminderIntervalHours
+    @AppStorage(SettingsKey.weightUnit) private var weightUnit: WeightUnit = .kg
+    @AppStorage(SettingsKey.goalWeightKg) private var goalWeightKg = 0.0
+    @AppStorage(SettingsKey.showWeightOnToday) private var showWeightOnToday = true
+    @Query(sort: \WeightEntry.timestamp, order: .reverse) private var weights: [WeightEntry]
     @State private var notificationsBlocked = false
 
     @State private var confirmingReset = false
@@ -129,6 +133,18 @@ struct GoalsView: View {
                 }
             }
 
+            Section {
+                Toggle("Goal weight", isOn: hasGoalWeight)
+                if goalWeightKg > 0 {
+                    NumberField(title: "Target", value: goalWeightInUnit, unit: weightUnit.symbol)
+                }
+                Toggle("Show weight on Today", isOn: $showWeightOnToday)
+            } header: {
+                Text("Weight")
+            } footer: {
+                Text("Progress is measured from your smoothed trend, not a single weigh-in, so day-to-day ups and downs don't throw it off.")
+            }
+
             if showsReset {
                 Section {
                     Button("Reset all goals", role: .destructive) {
@@ -162,7 +178,7 @@ struct GoalsView: View {
             Button("Reset all goals", role: .destructive) { resetAll() }
             Button("Cancel", role: .cancel) {}
         } message: {
-            Text("Energy, macros, fibre and water goals go back to their starting values.")
+            Text("Energy, macros, fibre, water and weight goals go back to their starting values.")
         }
     }
 
@@ -201,6 +217,22 @@ struct GoalsView: View {
         )
     }
 
+    /// Turning the goal on starts from your latest weight (or 70 kg).
+    private var hasGoalWeight: Binding<Bool> {
+        Binding(
+            get: { goalWeightKg > 0 },
+            set: { isOn in goalWeightKg = isOn ? (weights.first?.kilograms ?? 70).rounded() : 0 }
+        )
+    }
+
+    /// The goal shown in the chosen unit, stored in kilograms.
+    private var goalWeightInUnit: Binding<Double> {
+        Binding(
+            get: { weightUnit.value(fromKg: goalWeightKg) },
+            set: { goalWeightKg = max(weightUnit.kg(from: $0), 0) }
+        )
+    }
+
     private func refreshReminders() {
         Task { await WaterReminders.reschedule(context: context) }
     }
@@ -224,6 +256,8 @@ struct GoalsView: View {
         customProteinPercent = GoalDefaults.customProteinPercent
         customFatPercent = GoalDefaults.customFatPercent
         fibreFromCalories = false
+        goalWeightKg = 0
+        showWeightOnToday = true
     }
 }
 

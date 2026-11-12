@@ -97,6 +97,13 @@ struct MonthHistory: View {
                 weekChart(summaries)
                 weekAverages(summaries)
             }
+            Section {
+                NavigationLink {
+                    WeightHistoryView()
+                } label: {
+                    Label("Weight trend", systemImage: "chart.line.uptrend.xyaxis")
+                }
+            }
         }
     }
 
@@ -309,5 +316,5 @@ enum HistoryCalendar {
 
 #Preview {
     HistoryView { _ in }
-        .modelContainer(for: [Meal.self, MealItem.self, UserFood.self, WaterEntry.self], inMemory: true)
+        .modelContainer(for: [Meal.self, MealItem.self, UserFood.self, WaterEntry.self, WeightEntry.self], inMemory: true)
 }

@@ -26,6 +26,39 @@ nonisolated enum EnergyUnit: String, CaseIterable, Identifiable, Sendable {
     }
 }
 
+nonisolated enum WeightUnit: String, CaseIterable, Identifiable, Sendable {
+    case kg, lb
+
+    static let poundsPerKilogram = 2.20462
+
+    var id: String { rawValue }
+    var symbol: String { rawValue }
+    var label: String {
+        switch self {
+        case .kg: "Kilograms (kg)"
+        case .lb: "Pounds (lb)"
+        }
+    }
+
+    func value(fromKg kg: Double) -> Double {
+        self == .kg ? kg : kg * Self.poundsPerKilogram
+    }
+
+    func kg(from value: Double) -> Double {
+        self == .kg ? value : value / Self.poundsPerKilogram
+    }
+
+    /// e.g. "72.4 kg"
+    func format(kg: Double) -> String {
+        "\(value(fromKg: kg).formatted(.number.precision(.fractionLength(1)))) \(symbol)"
+    }
+
+    /// e.g. "+0.4 kg" or "-0.3 kg"
+    func formatChange(kg: Double) -> String {
+        "\(value(fromKg: kg).formatted(.number.precision(.fractionLength(1)).sign(strategy: .always()))) \(symbol)"
+    }
+}
+
 /// Keys for values kept in UserDefaults via @AppStorage.
 nonisolated enum SettingsKey {
     static let energyUnit = "energyUnit"
@@ -57,6 +90,9 @@ nonisolated enum SettingsKey {
     static let lastPlateID = "lastPlateID"
     static let portionCorrectionAll = "portionCorrectionAll"
     static let portionCorrectionSamples = "portionCorrectionSamples"
+    static let weightUnit = "weightUnit"
+    static let goalWeightKg = "goalWeightKg"
+    static let showWeightOnToday = "showWeightOnToday"
 
     /// Settings saved in a backup (goals, preferences, name, reminders).
     static let backedUp: [String] = [
@@ -65,6 +101,7 @@ nonisolated enum SettingsKey {
         customProteinPercent, customFatPercent, fibreFromCalories, userName,
         waterRemindersOn, waterReminderStartHour, waterReminderEndHour, waterReminderIntervalHours,
         backupIncludesPhotos, plates, portionCorrectionAll, portionCorrectionSamples,
+        weightUnit, goalWeightKg, showWeightOnToday,
     ]
 }
 

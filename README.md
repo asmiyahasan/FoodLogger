@@ -45,6 +45,7 @@ So FoodLogger uses AI for what it's good at (recognising food and estimating por
 - 🎯 Calorie goal with protein, carbs and fat calculated from it (Balanced, Higher protein, Lower carb or custom split).
 - 💧 Water tracking with one-tap buttons and smart reminders that only nudge you when you're behind pace. Log water straight from the notification.
 - 📅 History calendar with a weekly chart and averages.
+- ⚖️ Weight tracking with a smoothed trend line, weekly rate and an optional goal weight.
 - 🗣️ Siri and Shortcuts: "Log 500 ml of water in FoodLogger", "How many calories do I have left?"
 - 📱 Home and lock screen widgets: water so far, a +250 ml button and calories left
 - 💾 Backup and restore to iCloud Drive or anywhere in Files.
@@ -96,7 +97,7 @@ FoodLogger/
 ├── Barcode/        Camera scanning and lookup
 ├── Goals/          Goals screen (energy, macros, fibre, water, reminders)
 ├── History/        Calendar, weekly chart
-├── Reminders/      Water reminders and notification actions
+├── Weight/         Weight card, logging, trend chart
 ├── Intents/        Siri and Shortcuts
 ├── Backup/         Backup and restore
 ├── Plates/         Plate and bowl sizes

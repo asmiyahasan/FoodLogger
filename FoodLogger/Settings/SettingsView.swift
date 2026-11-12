@@ -7,6 +7,7 @@ struct SettingsView: View {
 
     @AppStorage(SettingsKey.userName) private var userName = ""
     @AppStorage(SettingsKey.energyUnit) private var energyUnit: EnergyUnit = .kcal
+    @AppStorage(SettingsKey.weightUnit) private var weightUnit: WeightUnit = .kg
     @AppStorage(SettingsKey.keepMealPhotos) private var keepMealPhotos = true
     @AppStorage(SettingsKey.goalEnergyKcal) private var goalEnergy = GoalDefaults.energyKcal
 
@@ -30,6 +31,11 @@ struct SettingsView: View {
                 Section("Units") {
                     Picker("Energy", selection: $energyUnit) {
                         ForEach(EnergyUnit.allCases) { unit in
+                            Text(unit.label).tag(unit)
+                        }
+                    }
+                    Picker("Weight", selection: $weightUnit) {
+                        ForEach(WeightUnit.allCases) { unit in
                             Text(unit.label).tag(unit)
                         }
                     }
@@ -250,5 +256,5 @@ struct MyFoodsView: View {
 
 #Preview {
     SettingsView()
-        .modelContainer(for: [Meal.self, MealItem.self, UserFood.self, WaterEntry.self], inMemory: true)
+        .modelContainer(for: [Meal.self, MealItem.self, UserFood.self, WaterEntry.self, WeightEntry.self], inMemory: true)
 }

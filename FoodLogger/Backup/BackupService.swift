@@ -13,6 +13,8 @@ nonisolated struct BackupFile: Codable, Sendable {
     var meals: [MealRecord]
     var water: [WaterRecord]
     var savedFoods: [SavedFoodRecord]
+    /// Missing in backups made before weight tracking.
+    var weights: [WeightRecord]?
 }
 
 nonisolated enum SettingValue: Codable, Sendable {
@@ -74,6 +76,11 @@ nonisolated struct WaterRecord: Codable, Sendable {
     var millilitres: Double
 }
 
+nonisolated struct WeightRecord: Codable, Sendable {
+    var timestamp: Date
+    var kilograms: Double
+}
+
 nonisolated struct SavedFoodRecord: Codable, Sendable {
     var uuid: UUID
     var name: String
@@ -133,6 +140,7 @@ enum BackupService {
         let meals = try context.fetch(FetchDescriptor<Meal>(sortBy: [SortDescriptor(\.timestamp)]))
         let water = try context.fetch(FetchDescriptor<WaterEntry>(sortBy: [SortDescriptor(\.timestamp)]))
         let foods = try context.fetch(FetchDescriptor<UserFood>())
+        let weights = try context.fetch(FetchDescriptor<WeightEntry>(sortBy: [SortDescriptor(\.timestamp)]))
 
         let file = BackupFile(
             exportedAt: .now,
@@ -166,7 +174,8 @@ enum BackupService {
                     basedOnFoodID: food.basedOnFoodID, timesUsed: food.timesUsed,
                     lastUsed: food.lastUsed, createdAt: food.createdAt
                 )
-            }
+            },
+            weights: weights.map { WeightRecord(timestamp: $0.timestamp, kilograms: $0.kilograms) }
         )
 
         let encoder = JSONEncoder()
@@ -189,6 +198,10 @@ enum BackupService {
         for meal in try context.fetch(FetchDescriptor<Meal>()) { context.delete(meal) }
         for entry in try context.fetch(FetchDescriptor<WaterEntry>()) { context.delete(entry) }
         for food in try context.fetch(FetchDescriptor<UserFood>()) { context.delete(food) }
+        // An older backup has no weights: keep the ones already in the app rather than wiping them.
+        if file.weights != nil {
+            for entry in try context.fetch(FetchDescriptor<WeightEntry>()) { context.delete(entry) }
+        }
         try context.save()
 
         for record in file.meals {
@@ -217,6 +230,9 @@ enum BackupService {
         }
         for record in file.water {
             context.insert(WaterEntry(millilitres: record.millilitres, timestamp: record.timestamp))
+        }
+        for record in file.weights ?? [] {
+            context.insert(WeightEntry(kilograms: record.kilograms, timestamp: record.timestamp))
         }
         for record in file.savedFoods {
             let food = UserFood(

@@ -28,7 +28,7 @@ There are three source folders. `FoodLogger/` is the app only. `FoodLoggerCore/`
 
 | Folder | What's in it |
 | --- | --- |
-| `FoodLoggerCore/Models/` | SwiftData models (`Meal`, `MealItem`, `UserFood`, `WaterEntry`), the `Nutrients` value type, and enums |
+| `FoodLoggerCore/Models/` | SwiftData models (`Meal`, `MealItem`, `UserFood`, `WaterEntry`, `WeightEntry`), the `Nutrients` value type, and enums |
 | `FoodLoggerCore/Shared/` | `SettingsKey`, `GoalDefaults`, `MacroGoals`, formatting, and `SharedStore` (the database, `AppGroup`, the one-time store move, `DailySnapshot`) |
 | `FoodLoggerCore/FoodSearch/` | `FoodCandidate`, `PortionUnit` and `SearchRanking` (needed by the models) |
 | `FoodLoggerCore/Reminders/` | Water reminder scheduling and the notification action handler |
@@ -40,6 +40,7 @@ There are three source folders. `FoodLogger/` is the app only. `FoodLoggerCore/`
 | `FoodLogger/Logging/` | `MealEditorView` (review/edit a meal), `ItemEditorView` (one item, with `AmountEditor`), `DraftItem` |
 | `FoodLogger/Barcode/` | VisionKit scanner, lookup and quick-log flow |
 | `Goals/`, `History/`, `Settings/`, `Onboarding/`, `Plates/`, `Backup/` | One feature each (in `FoodLogger/`) |
+| `FoodLogger/Weight/` | `WeightTrend` (smoothing and weekly rate), `WeightCard` on Today, `WeightEntrySheet`, `WeightHistoryView` (chart and list) |
 | `FoodLogger/Intents/` | Siri and Shortcuts (App Intents) |
 | `FoodLogger/Shared/` | `Theme`, `KeychainStore`, `APIKeys`, `AppExpiry`, platform helpers |
 | `FoodLoggerWidget/` | The "Today" widget: small, medium, lock-screen rectangular and circular |
@@ -80,6 +81,10 @@ erDiagram
     WaterEntry {
         Date timestamp
         Double millilitres
+    }
+    WeightEntry {
+        Date timestamp
+        Double kilograms "always kg; shown in kg or lb"
     }
 ```
 
@@ -156,6 +161,10 @@ The database lives in the App Group (`group.com.asmiyahasan.FoodLogger`) so the 
 The app's settings stay in `UserDefaults.standard` (`@AppStorage`). `SettingsMirror` copies them into the App Group's `UserDefaults` whenever they change, and `DailySnapshot`, `WaterReminders` and the widget read from there.
 
 `WidgetSync.startObserving()` (called in `FoodLoggerApp.init`) redraws the widget after any SwiftData save or settings change. The widget's +250 ml button runs `AddWaterIntent` inside the widget extension: it saves a `WaterEntry`, removes water reminders that are no longer needed and records `widgetChangedAt`. When the app next becomes active, `ContentView` sees that timestamp and rebuilds `TodayView` so its queries pick up the new water.
+
+### Weight
+
+`WeightEntry` stores each weigh-in in kilograms. `WeightTrend.points` keeps the latest weigh-in per day and runs an exponentially smoothed average over them (10% per day, adjusted for missed days, as in *The Hacker's Diet*). `weeklyRate` is the least-squares slope of the trend over the last 4 weeks. The Today card, the History chart and the "to goal" figure all use the trend rather than the raw reading. The goal weight lives in `SettingsKey.goalWeightKg` (0 means no goal).
 
 ### Backup
 
