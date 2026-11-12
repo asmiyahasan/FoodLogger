@@ -29,6 +29,7 @@ struct ContentView: View {
             }
         }
         .animation(.easeInOut, value: hasCompletedOnboarding)
+        .keyboardDismissable()
         .sheet(isPresented: Binding(
             get: { hasCompletedOnboarding && !hasSeenTutorial },
             set: { if !$0 { hasSeenTutorial = true } }

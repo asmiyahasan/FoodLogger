@@ -44,10 +44,14 @@ struct OnboardingView: View {
                 Text("Welcome to FoodLogger")
                     .font(.rounded(.largeTitle, weight: .bold))
                     .multilineTextAlignment(.center)
+                    .minimumScaleFactor(0.8)
+                    // Wrap onto a second line instead of cutting off with "..." when the keyboard takes up space.
+                    .fixedSize(horizontal: false, vertical: true)
                 Text("Snap a meal, say what's in it, and you're done.")
                     .font(.body)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
+                    .fixedSize(horizontal: false, vertical: true)
             }
 
             VStack(alignment: .leading, spacing: 8) {
