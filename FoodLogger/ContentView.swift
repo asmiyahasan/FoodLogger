@@ -10,6 +10,8 @@ import SwiftData
 
 struct ContentView: View {
     @AppStorage(SettingsKey.hasCompletedOnboarding) private var hasCompletedOnboarding = false
+    @Environment(\.scenePhase) private var scenePhase
+    @Environment(\.modelContext) private var context
 
     var body: some View {
         Group {
@@ -22,6 +24,11 @@ struct ContentView: View {
             }
         }
         .animation(.easeInOut, value: hasCompletedOnboarding)
+        .onChange(of: scenePhase) { _, phase in
+            if phase == .active {
+                Task { await WaterReminders.reschedule(context: context) }
+            }
+        }
     }
 }
 

@@ -311,12 +311,19 @@ struct DayView: View {
 
     private func addWater(_ millilitres: Double) {
         context.insert(WaterEntry(millilitres: millilitres, timestamp: Self.entryTimestamp(for: day)))
+        refreshReminders()
     }
 
     private func undoWater() {
         if let last = water.last {
             context.delete(last)
+            refreshReminders()
         }
+    }
+
+    private func refreshReminders() {
+        try? context.save()
+        Task { await WaterReminders.reschedule(context: context) }
     }
 
     private func logAgain(_ meal: Meal) {

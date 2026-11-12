@@ -45,6 +45,10 @@ nonisolated enum SettingsKey {
     static let fibreFromCalories = "fibreFromCalories"
     static let userName = "userName"
     static let hasCompletedOnboarding = "hasCompletedOnboarding"
+    static let waterRemindersOn = "waterRemindersOn"
+    static let waterReminderStartHour = "waterReminderStartHour"
+    static let waterReminderEndHour = "waterReminderEndHour"
+    static let waterReminderIntervalHours = "waterReminderIntervalHours"
 }
 
 /// Starting values until the user changes them in Settings.
@@ -59,4 +63,7 @@ nonisolated enum GoalDefaults {
     static let quickWater2 = 500.0
     static let customProteinPercent = 25.0
     static let customFatPercent = 30.0
+    static let reminderStartHour = 9
+    static let reminderEndHour = 21
+    static let reminderIntervalHours = 2.0
 }

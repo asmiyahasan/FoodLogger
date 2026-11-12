@@ -1,7 +1,9 @@
 import SwiftUI
+import SwiftData
 
 /// All daily goals in one place: energy, macros, fibre and water.
 struct GoalsView: View {
+    @Environment(\.modelContext) private var context
     /// A short line shown at the top (used during first-time setup).
     var intro: String? = nil
     var showsReset = true
@@ -20,6 +22,11 @@ struct GoalsView: View {
     @AppStorage(SettingsKey.customProteinPercent) private var customProteinPercent = GoalDefaults.customProteinPercent
     @AppStorage(SettingsKey.customFatPercent) private var customFatPercent = GoalDefaults.customFatPercent
     @AppStorage(SettingsKey.fibreFromCalories) private var fibreFromCalories = false
+    @AppStorage(SettingsKey.waterRemindersOn) private var remindersOn = false
+    @AppStorage(SettingsKey.waterReminderStartHour) private var reminderStart = GoalDefaults.reminderStartHour
+    @AppStorage(SettingsKey.waterReminderEndHour) private var reminderEnd = GoalDefaults.reminderEndHour
+    @AppStorage(SettingsKey.waterReminderIntervalHours) private var reminderInterval = GoalDefaults.reminderIntervalHours
+    @State private var notificationsBlocked = false
 
     @State private var confirmingReset = false
 
@@ -97,6 +104,31 @@ struct GoalsView: View {
                 Text("Set the buttons to the glasses or bottles you usually drink from.")
             }
 
+            Section {
+                Toggle("Water reminders", isOn: $remindersOn)
+                if remindersOn {
+                    Picker("From", selection: $reminderStart) {
+                        ForEach(5...12, id: \.self) { hour in Text(Self.hourLabel(hour)).tag(hour) }
+                    }
+                    Picker("Until", selection: $reminderEnd) {
+                        ForEach(15...23, id: \.self) { hour in Text(Self.hourLabel(hour)).tag(hour) }
+                    }
+                    Picker("Every", selection: $reminderInterval) {
+                        Text("1 hour").tag(1.0)
+                        Text("1½ hours").tag(1.5)
+                        Text("2 hours").tag(2.0)
+                        Text("3 hours").tag(3.0)
+                    }
+                }
+            } footer: {
+                if notificationsBlocked {
+                    Text("Notifications are off for FoodLogger. Turn them on in Settings → Notifications → FoodLogger.")
+                        .foregroundStyle(Theme.deepOrangeText)
+                } else {
+                    Text("Only sent when you're behind pace for the day, and they stop once you reach your goal. Log water right from the notification.")
+                }
+            }
+
             if showsReset {
                 Section {
                     Button("Reset all goals", role: .destructive) {
@@ -107,6 +139,23 @@ struct GoalsView: View {
                 }
             }
         }
+        .onChange(of: remindersOn) { _, isOn in
+            Task {
+                if isOn, !(await WaterReminders.requestPermission()) {
+                    remindersOn = false
+                    notificationsBlocked = true
+                    return
+                }
+                notificationsBlocked = false
+                await WaterReminders.reschedule(context: context)
+            }
+        }
+        .onChange(of: reminderStart) { refreshReminders() }
+        .onChange(of: reminderEnd) { refreshReminders() }
+        .onChange(of: reminderInterval) { refreshReminders() }
+        .onChange(of: goalWater) { refreshReminders() }
+        .onChange(of: quickWater1) { refreshReminders() }
+        .onChange(of: quickWater2) { refreshReminders() }
         .navigationTitle("Goals")
         .inlineNavigationTitle()
         .confirmationDialog("Reset all goals?", isPresented: $confirmingReset, titleVisibility: .visible) {
@@ -150,6 +199,15 @@ struct GoalsView: View {
             get: { energyUnit.value(fromKcal: goalEnergy) },
             set: { goalEnergy = energyUnit.kcal(from: $0) }
         )
+    }
+
+    private func refreshReminders() {
+        Task { await WaterReminders.reschedule(context: context) }
+    }
+
+    static func hourLabel(_ hour: Int) -> String {
+        let date = Calendar.current.date(bySettingHour: hour, minute: 0, second: 0, of: .now) ?? .now
+        return date.formatted(date: .omitted, time: .shortened)
     }
 
     private func resetAll() {
