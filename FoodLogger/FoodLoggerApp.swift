@@ -18,6 +18,8 @@ struct FoodLoggerApp: App {
         // Lets reminder buttons (+250 ml) log water straight into the database.
         NotificationHandler.shared.container = container
         UNUserNotificationCenter.current().delegate = NotificationHandler.shared
+        // Copies settings to the widget and redraws it whenever something changes.
+        WidgetSync.startObserving()
     }
 
     var body: some Scene {

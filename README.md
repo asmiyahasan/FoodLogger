@@ -46,6 +46,7 @@ So FoodLogger uses AI for what it's good at (recognising food and estimating por
 - 💧 Water tracking with one-tap buttons and smart reminders that only nudge you when you're behind pace. Log water straight from the notification.
 - 📅 History calendar with a weekly chart and averages.
 - 🗣️ Siri and Shortcuts: "Log 500 ml of water in FoodLogger", "How many calories do I have left?"
+- 📱 Home and lock screen widgets: water so far, a +250 ml button and calories left
 - 💾 Backup and restore to iCloud Drive or anywhere in Files.
 - 🌗 Light and dark mode, kcal or kJ.
 
@@ -64,7 +65,7 @@ More detail: [docs/AI_PIPELINE.md](docs/AI_PIPELINE.md)
 
 - Swift, SwiftUI and SwiftData (iOS 27, multiplatform project)
 - Claude Sonnet 5.5 via the Claude API, with tool use
-- Apple frameworks: Speech (on-device transcription), VisionKit (barcode scanning), Swift Charts, App Intents (Siri), UserNotifications, ImageIO
+- Apple frameworks: Speech (on-device transcription), VisionKit (barcode scanning), Swift Charts, App Intents (Siri), WidgetKit, UserNotifications, ImageIO
 - No backend and no third-party Swift packages
 
 ## Getting started
@@ -101,9 +102,14 @@ FoodLogger/
 ├── Plates/         Plate and bowl sizes
 ├── Onboarding/     Welcome, tutorial
 ├── Settings/       Settings, remembered foods
-├── Models/         SwiftData models
-├── Shared/         Theme, settings keys, helpers
+├── Shared/         Theme, keychain, helpers
 └── Resources/      Bundled Australian food database (afcd.json)
+FoodLoggerCore/     Code shared by the app and the widget
+├── Models/         SwiftData models
+├── Shared/         Settings keys, goals, the shared database (App Group)
+├── Reminders/      Water reminders and notification actions
+└── Widget/         Widget refresh, settings mirror, the +250 ml intent
+FoodLoggerWidget/   Home and lock screen widgets
 Tools/              Scripts to rebuild the food database and app icon
 Design/             Wireframes and icon sources
 docs/               Architecture, AI pipeline, development guide

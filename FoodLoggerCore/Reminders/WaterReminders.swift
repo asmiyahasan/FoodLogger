@@ -24,7 +24,7 @@ enum WaterReminders {
             .filter { $0.hasPrefix(identifierPrefix) }
         center.removePendingNotificationRequests(withIdentifiers: pending)
 
-        let defaults = UserDefaults.standard
+        let defaults = AppGroup.settings
         guard defaults.bool(forKey: SettingsKey.waterRemindersOn) else { return }
         let status = await center.notificationSettings().authorizationStatus
         guard status == .authorized || status == .provisional else { return }
@@ -79,6 +79,35 @@ enum WaterReminders {
         }
     }
 
+    /// Used by the widget: drops today's pending reminders that are no longer needed
+    /// after water was logged outside the app. The app does a full reschedule when it next opens.
+    static func pruneAfterExternalLog(context: ModelContext) async {
+        let defaults = AppGroup.settings
+        let goal = defaults.object(forKey: SettingsKey.goalWaterMl) as? Double ?? GoalDefaults.waterMl
+        let startHour = defaults.object(forKey: SettingsKey.waterReminderStartHour) as? Int ?? GoalDefaults.reminderStartHour
+        let endHour = defaults.object(forKey: SettingsKey.waterReminderEndHour) as? Int ?? GoalDefaults.reminderEndHour
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: .now)
+        guard goal > 0, endHour > startHour,
+              let windowStart = calendar.date(bySettingHour: startHour, minute: 0, second: 0, of: today),
+              let windowEnd = calendar.date(bySettingHour: endHour, minute: 0, second: 0, of: today)
+        else { return }
+
+        let total = totalToday(context: context)
+        let center = UNUserNotificationCenter.current()
+        let stale = await center.pendingNotificationRequests()
+            .map(\.identifier)
+            .filter { id in
+                guard id.hasPrefix(identifierPrefix),
+                      let seconds = Double(id.dropFirst(identifierPrefix.count)) else { return false }
+                let slot = Date(timeIntervalSince1970: seconds)
+                guard calendar.isDate(slot, inSameDayAs: today) else { return false }
+                let fraction = slot.timeIntervalSince(windowStart) / windowEnd.timeIntervalSince(windowStart)
+                return total >= goal * min(max(fraction, 0), 1)
+            }
+        center.removePendingNotificationRequests(withIdentifiers: stale)
+    }
+
     private static func registerCategory(quick1: Double, quick2: Double) {
         func title(_ ml: Double) -> String { "+\(Int(ml)) ml" }
         let category = UNNotificationCategory(
@@ -128,7 +157,7 @@ final class NotificationHandler: NSObject, UNUserNotificationCenterDelegate {
 
     private func handle(action: String) {
         guard let container else { return }
-        let defaults = UserDefaults.standard
+        let defaults = AppGroup.settings
         let millilitres: Double
         switch action {
         case WaterReminders.logFirstAction:
@@ -141,6 +170,7 @@ final class NotificationHandler: NSObject, UNUserNotificationCenterDelegate {
         let context = container.mainContext
         context.insert(WaterEntry(millilitres: millilitres))
         try? context.save()
+        WidgetSync.reload()
         Task { await WaterReminders.reschedule(context: context) }
     }
 }

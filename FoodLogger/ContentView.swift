@@ -13,11 +13,15 @@ struct ContentView: View {
     @AppStorage(SettingsKey.hasSeenTutorial) private var hasSeenTutorial = false
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.modelContext) private var context
+    /// Bumped when the widget logged something while the app was away, so Today re-reads the database.
+    @State private var dataVersion = 0
+    @State private var seenWidgetChange = WidgetSync.lastExternalChange
 
     var body: some View {
         Group {
             if hasCompletedOnboarding {
                 TodayView()
+                    .id(dataVersion)
                     .transition(.opacity)
             } else {
                 OnboardingView()
@@ -33,10 +37,18 @@ struct ContentView: View {
         }
         .onChange(of: scenePhase) { _, phase in
             if phase == .active {
+                if WidgetSync.lastExternalChange > seenWidgetChange {
+                    seenWidgetChange = WidgetSync.lastExternalChange
+                    dataVersion += 1
+                }
                 Task {
                     await WaterReminders.reschedule(context: context)
                     if hasCompletedOnboarding { await AppExpiry.scheduleReminder() }
                 }
+            }
+            if phase == .background {
+                SettingsMirror.sync()
+                WidgetSync.reloadNow()
             }
         }
     }

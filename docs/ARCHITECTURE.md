@@ -24,19 +24,25 @@ flowchart TB
 
 ## Folder map
 
+There are three source folders. `FoodLogger/` is the app only. `FoodLoggerCore/` is compiled into both the app and the widget extension. `FoodLoggerWidget/` is the widget only.
+
 | Folder | What's in it |
 | --- | --- |
-| `Models/` | SwiftData models (`Meal`, `MealItem`, `UserFood`, `WaterEntry`), the `Nutrients` value type, and enums |
-| `Today/` | `TodayView` (greeting, day picker, sheets) and `DayView` (one day's queries and lists); ring, bars and rows in `TodayComponents` |
-| `Capture/` | `CaptureView` (photo, plate, voice, Analyse), `SpeechRecorder`, `CameraPicker`, `ImagePrep` |
-| `MealParser/` | `ClaudeMealParser` (the AI loop) and `PortionLearning` |
-| `FoodSearch/` | `FoodCandidate` (a search result), the three sources, `SearchRanking`, `FoodSearchEngine`, `FoodSearchView` |
-| `Logging/` | `MealEditorView` (review/edit a meal), `ItemEditorView` (one item, with `AmountEditor`), `DraftItem` |
-| `Barcode/` | VisionKit scanner, lookup and quick-log flow |
-| `Goals/`, `History/`, `Settings/`, `Onboarding/`, `Plates/`, `Backup/` | One feature each |
-| `Reminders/` | Water reminder scheduling and the notification action handler |
-| `Intents/` | Siri and Shortcuts (App Intents) |
-| `Shared/` | `Theme`, `SettingsKey`, `SharedStore`, `KeychainStore`, `APIKeys`, `AppExpiry`, formatting and platform helpers |
+| `FoodLoggerCore/Models/` | SwiftData models (`Meal`, `MealItem`, `UserFood`, `WaterEntry`), the `Nutrients` value type, and enums |
+| `FoodLoggerCore/Shared/` | `SettingsKey`, `GoalDefaults`, `MacroGoals`, formatting, and `SharedStore` (the database, `AppGroup`, the one-time store move, `DailySnapshot`) |
+| `FoodLoggerCore/FoodSearch/` | `FoodCandidate`, `PortionUnit` and `SearchRanking` (needed by the models) |
+| `FoodLoggerCore/Reminders/` | Water reminder scheduling and the notification action handler |
+| `FoodLoggerCore/Widget/` | `WidgetSync` (redraws the widget), `SettingsMirror`, `AddWaterIntent` (the widget's +250 ml button) |
+| `FoodLogger/Today/` | `TodayView` (greeting, day picker, sheets) and `DayView` (one day's queries and lists); ring, bars and rows in `TodayComponents` |
+| `FoodLogger/Capture/` | `CaptureView` (photo, plate, voice, Analyse), `SpeechRecorder`, `CameraPicker`, `ImagePrep` |
+| `FoodLogger/MealParser/` | `ClaudeMealParser` (the AI loop) and `PortionLearning` |
+| `FoodLogger/FoodSearch/` | The three sources, `FoodSearchEngine`, `FoodSearchView` |
+| `FoodLogger/Logging/` | `MealEditorView` (review/edit a meal), `ItemEditorView` (one item, with `AmountEditor`), `DraftItem` |
+| `FoodLogger/Barcode/` | VisionKit scanner, lookup and quick-log flow |
+| `Goals/`, `History/`, `Settings/`, `Onboarding/`, `Plates/`, `Backup/` | One feature each (in `FoodLogger/`) |
+| `FoodLogger/Intents/` | Siri and Shortcuts (App Intents) |
+| `FoodLogger/Shared/` | `Theme`, `KeychainStore`, `APIKeys`, `AppExpiry`, platform helpers |
+| `FoodLoggerWidget/` | The "Today" widget: small, medium, lock-screen rectangular and circular |
 
 ## Data model
 
@@ -142,6 +148,14 @@ Details in [AI_PIPELINE.md](AI_PIPELINE.md).
 ### Siri and Shortcuts
 
 `Intents/FoodLoggerIntents.swift` defines `LogWaterIntent`, `CaloriesLeftIntent`, `WaterProgressIntent` and `SnapMealIntent`, plus `FoodLoggerShortcuts` (the Siri phrases). Intents use `SharedStore.container`, the same database as the app. "Snap a meal" sets `pendingLaunchAction`, which `TodayView` picks up to open the camera.
+
+### Widget
+
+The database lives in the App Group (`group.com.asmiyahasan.FoodLogger`) so the widget can read it. On first launch after the widget was added, `StoreMigration` copies the old `default.store` from the app's own folder into the group and renames the old files to `*.premigration` as a safety copy.
+
+The app's settings stay in `UserDefaults.standard` (`@AppStorage`). `SettingsMirror` copies them into the App Group's `UserDefaults` whenever they change, and `DailySnapshot`, `WaterReminders` and the widget read from there.
+
+`WidgetSync.startObserving()` (called in `FoodLoggerApp.init`) redraws the widget after any SwiftData save or settings change. The widget's +250 ml button runs `AddWaterIntent` inside the widget extension: it saves a `WaterEntry`, removes water reminders that are no longer needed and records `widgetChangedAt`. When the app next becomes active, `ContentView` sees that timestamp and rebuilds `TodayView` so its queries pick up the new water.
 
 ### Backup
 
