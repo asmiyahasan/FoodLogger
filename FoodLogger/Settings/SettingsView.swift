@@ -86,6 +86,14 @@ struct SettingsView: View {
                         LabeledContent("Saved foods", value: "\(myFoods.count)")
                     }
                 }
+
+                Section("Data sources") {
+                    Text("Australian Food Composition Database, Release 3 © Food Standards Australia New Zealand, licensed under CC BY 4.0.")
+                    Text("Open Food Facts data © Open Food Facts contributors, licensed under the Open Database License.")
+                    Text("USDA FoodData Central, U.S. Department of Agriculture (public domain).")
+                }
+                .font(.footnote)
+                .foregroundStyle(.secondary)
             }
             .navigationTitle("Settings")
             .inlineNavigationTitle()

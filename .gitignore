@@ -13,3 +13,6 @@ Secrets.xcconfig
 
 # API keys file read by the app (never commit)
 Secrets.plist
+
+# Source spreadsheets (converted into FoodLogger/Resources/afcd.json)
+Data/*.xlsx
