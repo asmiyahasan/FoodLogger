@@ -42,6 +42,9 @@ struct WeightHistoryView: View {
                 }
             } else {
                 Section {
+                    goalHeader(points)
+                }
+                Section {
                     Picker("Range", selection: $range) {
                         ForEach(ChartRange.allCases) { Text($0.rawValue).tag($0) }
                     }
@@ -84,6 +87,58 @@ struct WeightHistoryView: View {
         }
         .sheet(item: $editingDay) { day in
             WeightEntrySheet(day: day.date)
+        }
+    }
+
+    // MARK: - Goal
+
+    /// Current trend, goal and progress from your first weigh-in towards it.
+    @ViewBuilder
+    private func goalHeader(_ points: [WeightPoint]) -> some View {
+        if let first = points.first, let latest = points.last {
+            if goalKg > 0 {
+                let total = first.kg - goalKg
+                let done = first.kg - latest.trendKg
+                let fraction = abs(total) < 0.1 ? 1 : min(max(done / total, 0), 1)
+                let remaining = abs(latest.trendKg - goalKg)
+                VStack(alignment: .leading, spacing: 12) {
+                    HStack(alignment: .firstTextBaseline) {
+                        headerStat(unit.format(kg: latest.trendKg), "Now (trend)")
+                        Spacer()
+                        Image(systemName: "arrow.right")
+                            .foregroundStyle(.tertiary)
+                        Spacer()
+                        headerStat(unit.format(kg: goalKg), "Goal", alignment: .trailing)
+                    }
+                    GoalProgressBar(fraction: fraction, height: 8)
+                    Text(remaining < 0.1
+                         ? "You've reached your goal."
+                         : "\(unit.format(kg: remaining)) to go · started at \(unit.format(kg: first.kg)) on \(first.date.formatted(.dateTime.day().month()))")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                .padding(.vertical, 6)
+            } else {
+                VStack(alignment: .leading, spacing: 8) {
+                    headerStat(unit.format(kg: latest.trendKg), "Now (trend)")
+                    NavigationLink("Set a goal weight") {
+                        GoalsView()
+                    }
+                    .font(.subheadline)
+                }
+                .padding(.vertical, 6)
+            }
+        }
+    }
+
+    private func headerStat(_ value: String, _ label: String, alignment: HorizontalAlignment = .leading) -> some View {
+        VStack(alignment: alignment, spacing: 2) {
+            Text(value)
+                .font(.rounded(.title2, weight: .bold))
+                .monospacedDigit()
+            Text(label)
+                .font(.caption)
+                .foregroundStyle(.secondary)
         }
     }
 
@@ -179,11 +234,6 @@ struct WeightHistoryView: View {
                 LabeledContent("Change (\(range.rawValue))", value: unit.formatChange(kg: change))
             }
             LabeledContent("Per week", value: rate.map { unit.formatChange(kg: $0) } ?? "Needs a week of weigh-ins")
-            if goalKg > 0, let latest {
-                let remaining = latest.trendKg - goalKg
-                LabeledContent("Goal", value: unit.format(kg: goalKg))
-                LabeledContent("To go", value: abs(remaining) < 0.1 ? "You're there" : unit.format(kg: abs(remaining)))
-            }
         }
         .monospacedDigit()
     }

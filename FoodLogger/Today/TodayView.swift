@@ -143,6 +143,7 @@ struct DayView: View {
     @AppStorage(SettingsKey.weightUnit) private var weightUnit: WeightUnit = .kg
     @AppStorage(SettingsKey.goalWeightKg) private var goalWeightKg = 0.0
     @State private var showingWeightEntry = false
+    @State private var showingWeightTrend = false
 
     @AppStorage(SettingsKey.userName) private var userName = ""
     @AppStorage(SettingsKey.energyUnit) private var energyUnit: EnergyUnit = .kcal
@@ -300,6 +301,16 @@ struct DayView: View {
         .sheet(isPresented: $showingWeightEntry) {
             WeightEntrySheet(day: day)
         }
+        .sheet(isPresented: $showingWeightTrend) {
+            NavigationStack {
+                WeightHistoryView()
+                    .toolbar {
+                        ToolbarItem(placement: .cancellationAction) {
+                            Button("Done") { showingWeightTrend = false }
+                        }
+                    }
+            }
+        }
     }
 
     private var weightCard: some View {
@@ -316,6 +327,10 @@ struct DayView: View {
             isToday: isToday,
             log: { showingWeightEntry = true }
         )
+        // Tapping the card (not its button) opens the trend chart.
+        .contentShape(Rectangle())
+        .onTapGesture { showingWeightTrend = true }
+        .accessibilityAction(named: "Show weight trend") { showingWeightTrend = true }
     }
 
     private var dayPicker: some View {
