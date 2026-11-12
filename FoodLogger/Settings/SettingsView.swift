@@ -16,6 +16,10 @@ struct SettingsView: View {
     @AppStorage(SettingsKey.quickWater2) private var quickWater2 = GoalDefaults.quickWater2
     @AppStorage(SettingsKey.keepMealPhotos) private var keepMealPhotos = true
 
+    @State private var usdaKeyInput = ""
+    @State private var hasUSDAKey = KeychainStore.read(.usdaAPIKey) != nil
+    private let usdaKeyInSecretsFile = APIKeys.fromSecretsFile(.usdaAPIKey) != nil
+
     var body: some View {
         NavigationStack {
             Form {
@@ -49,6 +53,30 @@ struct SettingsView: View {
                     Toggle("Keep meal photos", isOn: $keepMealPhotos)
                 } footer: {
                     Text("When off, a meal's photo is deleted once the meal is logged.")
+                }
+
+                Section {
+                    if hasUSDAKey {
+                        LabeledContent("API key", value: "Saved")
+                        Button("Remove key", role: .destructive) {
+                            KeychainStore.delete(.usdaAPIKey)
+                            hasUSDAKey = false
+                        }
+                    } else if usdaKeyInSecretsFile {
+                        LabeledContent("API key", value: "Set in Secrets.plist")
+                    } else {
+                        SecureField("Paste your API key", text: $usdaKeyInput)
+                        Button("Save key") {
+                            let key = usdaKeyInput.trimmingCharacters(in: .whitespacesAndNewlines)
+                            hasUSDAKey = KeychainStore.save(key, for: .usdaAPIKey)
+                            usdaKeyInput = ""
+                        }
+                        .disabled(usdaKeyInput.trimmingCharacters(in: .whitespaces).isEmpty)
+                    }
+                } header: {
+                    Text("USDA FoodData Central")
+                } footer: {
+                    Text("Stored only in this device's Keychain. Get a free key at fdc.nal.usda.gov.")
                 }
 
                 Section("My foods") {

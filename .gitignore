@@ -10,3 +10,6 @@ build/
 # Secrets (never commit API keys)
 *.secret
 Secrets.xcconfig
+
+# API keys file read by the app (never commit)
+Secrets.plist

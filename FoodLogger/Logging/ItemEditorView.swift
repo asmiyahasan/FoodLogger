@@ -6,9 +6,8 @@ import SwiftData
 struct ItemEditorView: View {
     @Environment(\.dismiss) private var dismiss
     @AppStorage(SettingsKey.energyUnit) private var energyUnit: EnergyUnit = .kcal
-    @Query(sort: \UserFood.lastUsed, order: .reverse) private var myFoods: [UserFood]
-
     @State private var draft: DraftItem
+    @State private var showingSearch = false
     let onSave: (DraftItem) -> Void
 
     init(item: DraftItem, onSave: @escaping (DraftItem) -> Void) {
@@ -23,15 +22,13 @@ struct ItemEditorView: View {
     var body: some View {
         NavigationStack {
             Form {
-                if !myFoods.isEmpty {
-                    Section {
-                        Menu {
-                            ForEach(myFoods) { food in
-                                Button(food.name) { apply(food) }
-                            }
-                        } label: {
-                            Label("Choose from my foods", systemImage: "star")
-                        }
+                Section {
+                    Button("Search foods", systemImage: "magnifyingglass") {
+                        showingSearch = true
+                    }
+                } footer: {
+                    if !draft.foodID.isEmpty {
+                        Text("Values from \(draft.sourceLabel).")
                     }
                 }
 
@@ -63,6 +60,11 @@ struct ItemEditorView: View {
                     }
                 }
             }
+            .sheet(isPresented: $showingSearch) {
+                FoodSearchView(initialQuery: draft.name) { food in
+                    apply(food)
+                }
+            }
             .navigationTitle(draft.name.isEmpty ? "Add item" : draft.name)
             .inlineNavigationTitle()
             .toolbar {
@@ -88,13 +90,17 @@ struct ItemEditorView: View {
         )
     }
 
-    private func apply(_ food: UserFood) {
+    /// Fills the item from a search result. The amount keeps what you typed,
+    /// unless the source gives a typical serving.
+    private func apply(_ food: FoodCandidate) {
         draft.name = food.name
-        draft.per100g = food.nutrientsPer100g
-        draft.grams = food.defaultGrams
-        draft.foodID = food.foodID
-        draft.sourceLabel = "My foods"
+        draft.per100g = food.per100g
+        draft.foodID = food.id
+        draft.sourceLabel = food.source.shortLabel
         draft.origin = .user
+        if let serving = food.servingGrams, serving > 0 {
+            draft.grams = serving
+        }
         draft.saveToMyFoods = false
     }
 }
