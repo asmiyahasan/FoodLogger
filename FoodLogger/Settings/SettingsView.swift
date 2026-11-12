@@ -6,19 +6,8 @@ struct SettingsView: View {
     @Query private var myFoods: [UserFood]
 
     @AppStorage(SettingsKey.energyUnit) private var energyUnit: EnergyUnit = .kcal
-    @AppStorage(SettingsKey.goalEnergyKcal) private var goalEnergy = GoalDefaults.energyKcal
-    @AppStorage(SettingsKey.goalProtein) private var goalProtein = GoalDefaults.protein
-    @AppStorage(SettingsKey.goalCarbs) private var goalCarbs = GoalDefaults.carbs
-    @AppStorage(SettingsKey.goalFat) private var goalFat = GoalDefaults.fat
-    @AppStorage(SettingsKey.goalFibre) private var goalFibre = GoalDefaults.fibre
-    @AppStorage(SettingsKey.goalWaterMl) private var goalWater = GoalDefaults.waterMl
-    @AppStorage(SettingsKey.quickWater1) private var quickWater1 = GoalDefaults.quickWater1
-    @AppStorage(SettingsKey.quickWater2) private var quickWater2 = GoalDefaults.quickWater2
     @AppStorage(SettingsKey.keepMealPhotos) private var keepMealPhotos = true
-    @AppStorage(SettingsKey.macrosFromCalories) private var macrosFromCalories = true
-    @AppStorage(SettingsKey.macroPreset) private var macroPreset: MacroPreset = .balanced
-    @AppStorage(SettingsKey.customProteinPercent) private var customProteinPercent = GoalDefaults.customProteinPercent
-    @AppStorage(SettingsKey.customFatPercent) private var customFatPercent = GoalDefaults.customFatPercent
+    @AppStorage(SettingsKey.goalEnergyKcal) private var goalEnergy = GoalDefaults.energyKcal
 
     @State private var usdaKeyInput = ""
     @State private var hasUSDAKey = KeychainStore.read(.usdaAPIKey) != nil
@@ -35,49 +24,16 @@ struct SettingsView: View {
                     }
                 }
 
-                Section("Daily goals") {
-                    NumberField(title: "Energy", value: energyGoal, unit: energyUnit.symbol)
-                    NumberField(title: "Fibre", value: $goalFibre, unit: "g")
-                    NumberField(title: "Water", value: $goalWater, unit: "ml")
-                }
-
                 Section {
-                    Toggle("Set from calories", isOn: $macrosFromCalories)
-                    if macrosFromCalories {
-                        Picker("Split", selection: $macroPreset) {
-                            ForEach(MacroPreset.allCases) { preset in
-                                Text(preset.label).tag(preset)
-                            }
+                    NavigationLink {
+                        GoalsView()
+                    } label: {
+                        LabeledContent {
+                            Text(energyUnit.format(kcal: goalEnergy))
+                        } label: {
+                            Label("Goals", systemImage: "target")
                         }
-                        if macroPreset == .custom {
-                            Stepper("Protein \(Int(customProteinPercent))%", value: $customProteinPercent, in: 10...50, step: 5)
-                            Stepper("Fat \(Int(customFatPercent))%", value: $customFatPercent, in: 15...50, step: 5)
-                        }
-                        macroRow("Protein", grams: macroGoals.protein, percent: proteinPercent)
-                        macroRow("Carbs", grams: macroGoals.carbs, percent: 100 - proteinPercent - fatPercent)
-                        macroRow("Fat", grams: macroGoals.fat, percent: fatPercent)
-                    } else {
-                        NumberField(title: "Protein", value: $goalProtein, unit: "g")
-                        NumberField(title: "Carbs", value: $goalCarbs, unit: "g")
-                        NumberField(title: "Fat", value: $goalFat, unit: "g")
                     }
-                } header: {
-                    Text("Macros")
-                } footer: {
-                    if macrosFromCalories {
-                        Text("Grams update when you change your calorie goal. Protein and carbs have 4 kcal per gram, fat 9.")
-                    } else {
-                        Text("Set exact grams yourself.")
-                    }
-                }
-
-                Section {
-                    NumberField(title: "First button", value: $quickWater1, unit: "ml")
-                    NumberField(title: "Second button", value: $quickWater2, unit: "ml")
-                } header: {
-                    Text("Water buttons")
-                } footer: {
-                    Text("Set these to the glasses or bottles you usually drink from.")
                 }
 
                 Section {
@@ -134,40 +90,6 @@ struct SettingsView: View {
                 }
             }
         }
-    }
-
-    private var macroGoals: MacroGoals {
-        MacroGoals.effective(
-            fromCalories: macrosFromCalories,
-            energyKcal: goalEnergy,
-            preset: macroPreset,
-            customProteinPercent: customProteinPercent,
-            customFatPercent: customFatPercent,
-            manual: MacroGoals(protein: goalProtein, carbs: goalCarbs, fat: goalFat)
-        )
-    }
-
-    private var proteinPercent: Double {
-        macroPreset.split?.protein ?? customProteinPercent
-    }
-
-    private var fatPercent: Double {
-        macroPreset.split?.fat ?? customFatPercent
-    }
-
-    private func macroRow(_ name: String, grams: Double, percent: Double) -> some View {
-        LabeledContent(name) {
-            Text("\(gramsText(grams.rounded()))  ·  \(Int(percent))%")
-                .monospacedDigit()
-        }
-    }
-
-    /// The energy goal shown in the chosen unit, stored in kcal.
-    private var energyGoal: Binding<Double> {
-        Binding(
-            get: { energyUnit.value(fromKcal: goalEnergy) },
-            set: { goalEnergy = energyUnit.kcal(from: $0) }
-        )
     }
 }
 

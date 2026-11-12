@@ -87,6 +87,7 @@ struct DayView: View {
     @AppStorage(SettingsKey.macroPreset) private var macroPreset: MacroPreset = .balanced
     @AppStorage(SettingsKey.customProteinPercent) private var customProteinPercent = GoalDefaults.customProteinPercent
     @AppStorage(SettingsKey.customFatPercent) private var customFatPercent = GoalDefaults.customFatPercent
+    @AppStorage(SettingsKey.fibreFromCalories) private var fibreFromCalories = false
 
     init(day: Binding<Date>, editingMeal: Binding<Meal?>) {
         _day = day
@@ -131,7 +132,7 @@ struct DayView: View {
                         GoalBar(label: "Protein", value: totals.protein, goal: macroGoals.protein, unit: "g")
                         GoalBar(label: "Carbs", value: totals.carbs, goal: macroGoals.carbs, unit: "g")
                         GoalBar(label: "Fat", value: totals.fat, goal: macroGoals.fat, unit: "g")
-                        GoalBar(label: "Fibre", value: totals.fibre, goal: goalFibre, unit: "g")
+                        GoalBar(label: "Fibre", value: totals.fibre, goal: FibreGoal.effective(fromCalories: fibreFromCalories, energyKcal: goalEnergy, manual: goalFibre), unit: "g")
                     }
                 }
                 .padding(.vertical, 8)

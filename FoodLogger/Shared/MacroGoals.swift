@@ -60,3 +60,12 @@ nonisolated struct MacroGoals: Sendable {
         return from(energyKcal: energyKcal, proteinPercent: split.protein, fatPercent: split.fat)
     }
 }
+
+nonisolated enum FibreGoal {
+    /// Common guideline: 14 g of fibre per 1,000 kcal (US Dietary Guidelines).
+    static let gramsPer1000Kcal = 14.0
+
+    static func effective(fromCalories: Bool, energyKcal: Double, manual: Double) -> Double {
+        fromCalories ? energyKcal * gramsPer1000Kcal / 1000 : manual
+    }
+}

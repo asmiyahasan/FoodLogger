@@ -42,6 +42,7 @@ nonisolated enum SettingsKey {
     static let macroPreset = "macroPreset"
     static let customProteinPercent = "customProteinPercent"
     static let customFatPercent = "customFatPercent"
+    static let fibreFromCalories = "fibreFromCalories"
 }
 
 /// Starting values until the user changes them in Settings.
