@@ -42,7 +42,11 @@ nonisolated struct FoodSearchEngine: Sendable {
 extension UserFood {
     var candidate: FoodCandidate {
         var detail = brand.isEmpty ? "" : "\(brand) · "
-        detail += "usually \(gramsText(defaultGrams))"
+        if let unit = measures.first(where: { $0.name == preferredUnit }), unit.grams > 0 {
+            detail += "usually \(unit.label(quantity: defaultGrams / unit.grams)) (\(gramsText(defaultGrams)))"
+        } else {
+            detail += "usually \(gramsText(defaultGrams))"
+        }
         if timesUsed > 1 { detail += " · \(timesUsed)×" }
         return FoodCandidate(
             id: foodID,
@@ -51,7 +55,9 @@ extension UserFood {
             source: .mine,
             per100g: nutrientsPer100g,
             servingGrams: defaultGrams,
-            brand: brand.isEmpty ? nil : brand
+            brand: brand.isEmpty ? nil : brand,
+            measures: measures,
+            preferredUnit: preferredUnit
         )
     }
 

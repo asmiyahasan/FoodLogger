@@ -213,7 +213,9 @@ struct MealEditorView: View {
                 origin: draft.origin,
                 confidence: draft.confidence,
                 position: index,
-                dish: draft.dish
+                dish: draft.dish,
+                unitName: draft.unitName,
+                measures: draft.measures
             )
             context.insert(item)
             item.meal = target
@@ -257,6 +259,14 @@ struct MealEditorView: View {
             food.defaultGrams = draft.grams
             if !draft.isFromMyFoods { food.nutrientsPer100g = draft.per100g }
             if !draft.brand.isEmpty { food.brand = draft.brand }
+            for unit in draft.measures {
+                if let index = food.measures.firstIndex(where: { $0.name == unit.name }) {
+                    food.measures[index] = unit
+                } else {
+                    food.measures.append(unit)
+                }
+            }
+            food.preferredUnit = draft.unitName
 
             // Other names for it ("chilli jam" for your Beerenberg jar) so it matches next time.
             for alias in [name, draft.matchedName] where !alias.isEmpty {
@@ -328,7 +338,7 @@ struct DraftItemRow: View {
     let unit: EnergyUnit
 
     private var detail: String {
-        var parts = [gramsText(item.grams), item.sourceLabel]
+        var parts = [item.amountText, item.sourceLabel]
         if item.origin != .user { parts.append(item.origin.label) }
         return parts.joined(separator: " · ")
     }

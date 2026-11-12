@@ -36,6 +36,53 @@ nonisolated struct FoodCandidate: Identifiable, Hashable, Sendable {
     var servingGrams: Double?
     /// The product's brand, for branded foods.
     var brand: String? = nil
+    /// Household measures for this food (from your saved foods).
+    var measures: [PortionUnit] = []
+    /// The measure you usually use for it, e.g. "cup".
+    var preferredUnit: String = ""
+}
+
+/// A household measure and its weight, e.g. 1 cup of cooked rice ≈ 160 g.
+nonisolated struct PortionUnit: Codable, Hashable, Sendable, Identifiable {
+    var name: String
+    var grams: Double
+
+    var id: String { name }
+
+    /// Available for every food.
+    static let spoons = [PortionUnit(name: "tbsp", grams: 15), PortionUnit(name: "tsp", grams: 5)]
+
+    /// Whole items move in halves; everything else in quarters.
+    var step: Double {
+        ["piece", "slice", "serving", "egg", "roti", "paratha", "naan"].contains(name) ? 0.5 : 0.25
+    }
+
+    /// "1½ cups", "2 pieces", "¾ ladle"
+    func label(quantity: Double) -> String {
+        "\(Self.fraction(quantity)) \(quantity > 1 ? Self.plural(name) : name)"
+    }
+
+    static func fraction(_ quantity: Double) -> String {
+        let rounded = (quantity * 4).rounded() / 4
+        guard rounded > 0 else { return quantity.formatted(.number.precision(.fractionLength(0...2))) }
+        let whole = Int(rounded)
+        let symbol: String
+        switch rounded - Double(whole) {
+        case 0.25: symbol = "¼"
+        case 0.5: symbol = "½"
+        case 0.75: symbol = "¾"
+        default: symbol = ""
+        }
+        return whole == 0 ? symbol : "\(whole)\(symbol)"
+    }
+
+    static func plural(_ name: String) -> String {
+        if ["tbsp", "tsp", "g", "ml"].contains(name) { return name }
+        if name.hasSuffix("s") || name.hasSuffix("x") || name.hasSuffix("ch") || name.hasSuffix("sh") {
+            return name + "es"
+        }
+        return name + "s"
+    }
 }
 
 /// A food you've logged before, as used for search and by Claude.

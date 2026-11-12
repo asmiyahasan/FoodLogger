@@ -65,6 +65,8 @@ nonisolated struct ItemRecord: Codable, Sendable {
     var position: Int
     var nutrientsPer100g: Nutrients
     var dish: String?
+    var unitName: String?
+    var measures: [PortionUnit]?
 }
 
 nonisolated struct WaterRecord: Codable, Sendable {
@@ -76,6 +78,8 @@ nonisolated struct SavedFoodRecord: Codable, Sendable {
     var uuid: UUID
     var name: String
     var brand: String?
+    var measures: [PortionUnit]?
+    var preferredUnit: String?
     var aliases: [String]
     var nutrientsPer100g: Nutrients
     var defaultGrams: Double
@@ -143,7 +147,8 @@ enum BackupService {
                             name: item.name, grams: item.grams, foodID: item.foodID,
                             sourceLabel: item.sourceLabel, origin: item.originRaw,
                             confidence: item.confidence, position: item.position,
-                            nutrientsPer100g: item.nutrientsPer100g, dish: item.dish
+                            nutrientsPer100g: item.nutrientsPer100g, dish: item.dish,
+                            unitName: item.unitName, measures: item.measures
                         )
                     }
                 )
@@ -151,7 +156,8 @@ enum BackupService {
             water: water.map { WaterRecord(timestamp: $0.timestamp, millilitres: $0.millilitres) },
             savedFoods: foods.map { food in
                 SavedFoodRecord(
-                    uuid: food.uuid, name: food.name, brand: food.brand, aliases: food.aliases,
+                    uuid: food.uuid, name: food.name, brand: food.brand,
+                    measures: food.measures, preferredUnit: food.preferredUnit, aliases: food.aliases,
                     nutrientsPer100g: food.nutrientsPer100g, defaultGrams: food.defaultGrams,
                     basedOnFoodID: food.basedOnFoodID, timesUsed: food.timesUsed,
                     lastUsed: food.lastUsed, createdAt: food.createdAt
@@ -197,7 +203,9 @@ enum BackupService {
                     origin: ItemOrigin(rawValue: itemRecord.origin) ?? .user,
                     confidence: itemRecord.confidence,
                     position: itemRecord.position,
-                    dish: itemRecord.dish ?? ""
+                    dish: itemRecord.dish ?? "",
+                    unitName: itemRecord.unitName ?? "",
+                    measures: itemRecord.measures ?? []
                 )
                 context.insert(item)
                 item.meal = meal
@@ -215,6 +223,8 @@ enum BackupService {
             )
             food.uuid = record.uuid
             food.brand = record.brand ?? ""
+            food.measures = record.measures ?? []
+            food.preferredUnit = record.preferredUnit ?? ""
             food.aliases = record.aliases
             food.timesUsed = record.timesUsed
             food.lastUsed = record.lastUsed

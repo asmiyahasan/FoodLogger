@@ -19,9 +19,27 @@ struct DraftItem: Identifiable, Hashable {
     var brand = ""
     /// The dish this ingredient belongs to, if estimated from a recipe.
     var dish = ""
+    /// Household measures for this food, and the one chosen ("" = grams).
+    var measures: [PortionUnit] = []
+    var unitName = ""
 
     var nutrients: Nutrients { per100g.scaled(by: grams / 100) }
     var isFromMyFoods: Bool { foodID.hasPrefix("user:") }
+
+    /// This food's measures plus tbsp/tsp.
+    var availableMeasures: [PortionUnit] {
+        measures + PortionUnit.spoons.filter { spoon in !measures.contains { $0.name == spoon.name } }
+    }
+
+    var selectedUnit: PortionUnit? {
+        unitName.isEmpty ? nil : availableMeasures.first { $0.name == unitName }
+    }
+
+    /// "1½ cups (240 g)" or "240 g"
+    var amountText: String {
+        guard let unit = selectedUnit, unit.grams > 0 else { return gramsText(grams) }
+        return "\(unit.label(quantity: grams / unit.grams)) (\(gramsText(grams.rounded())))"
+    }
     /// Shown with a Check tag on the review screen.
     var needsCheck: Bool { confidence < 0.6 || (foodID.isEmpty && origin != .user) }
 }
@@ -36,7 +54,9 @@ extension DraftItem {
             sourceLabel: item.sourceLabel,
             origin: item.origin,
             confidence: item.confidence,
-            dish: item.dish
+            dish: item.dish,
+            measures: item.measures,
+            unitName: item.unitName
         )
     }
 }
@@ -68,5 +88,16 @@ extension DraftItem {
         }
         note = parsed.food == nil ? "No match found. Tap to search." : parsed.note
         dish = parsed.dish
+        measures = parsed.measures
+        if let serving = parsed.food?.servingGrams, serving > 0, !measures.contains(where: { $0.name == "serving" }) {
+            measures.append(PortionUnit(name: "serving", grams: serving))
+        }
+        if let savedMeasures = parsed.food?.measures {
+            for unit in savedMeasures where !measures.contains(where: { $0.name == unit.name }) {
+                measures.append(unit)
+            }
+        }
+        let preferred = parsed.displayUnit.isEmpty ? (parsed.food?.preferredUnit ?? "") : parsed.displayUnit
+        unitName = availableMeasures.contains { $0.name == preferred } ? preferred : ""
     }
 }

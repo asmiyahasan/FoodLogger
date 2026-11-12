@@ -19,6 +19,8 @@ struct CaptureView: View {
     @State private var progress = ""
     @State private var errorMessage: String?
     @State private var review: Review?
+    @AppStorage(SettingsKey.plates) private var platesJSON = "[]"
+    @AppStorage(SettingsKey.lastPlateID) private var plateID = ""
 
     struct Review {
         var drafts: [DraftItem]
@@ -42,6 +44,7 @@ struct CaptureView: View {
             NavigationStack {
                 Form {
                     photoSection
+                    plateSection
                     voiceSection
                     analyseSection
                 }
@@ -102,6 +105,36 @@ struct CaptureView: View {
                 }
             }
         }
+    }
+
+    private var plates: [Plate] { PlateStore.decode(platesJSON) }
+
+    @ViewBuilder
+    private var plateSection: some View {
+        if !plates.isEmpty {
+            Section {
+                Picker("Served on", selection: $plateID) {
+                    Text("Not sure").tag("")
+                    ForEach(plates) { plate in
+                        Text(plate.label).tag(plate.id.uuidString)
+                    }
+                }
+            } footer: {
+                Text("Lets Claude judge portions from your plate's real size.")
+            }
+        }
+    }
+
+    /// Size reference for Claude: the chosen plate, plus the others in case the user names one.
+    private var plateContext: String {
+        guard !plates.isEmpty else { return "" }
+        var text = ""
+        if let chosen = plates.first(where: { $0.id.uuidString == plateID }) {
+            text = "The meal is served on the user's \(chosen.name), which is \(chosen.diameterCm.formatted()) cm across. Use it as a size reference when estimating portions. "
+        }
+        let all = plates.map(\.label).joined(separator: ", ")
+        text += "The user's plates and bowls: \(all). If the description names one, use its size."
+        return text
     }
 
     private var voiceSection: some View {
@@ -189,7 +222,7 @@ struct CaptureView: View {
         )
 
         do {
-            let items = try await parser.parse(imageJPEG: upload, transcript: spoken)
+            let items = try await parser.parse(imageJPEG: upload, transcript: spoken, sizeReference: plateContext)
             review = Review(
                 drafts: items.map { DraftItem(parsed: $0) },
                 photo: upload,

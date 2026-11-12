@@ -45,6 +45,16 @@ struct SettingsView: View {
                 }
 
                 Section {
+                    NavigationLink {
+                        PlatesView()
+                    } label: {
+                        Label("Plates & bowls", systemImage: "circle.circle")
+                    }
+                } footer: {
+                    Text("Your real plate sizes help Claude judge portions in photos.")
+                }
+
+                Section {
                     Toggle("Keep meal photos", isOn: $keepMealPhotos)
                 } footer: {
                     Text("When off, a meal's photo is deleted once the meal is logged.")

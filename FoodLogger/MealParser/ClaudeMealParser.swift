@@ -10,6 +10,9 @@ nonisolated struct ParsedMealItem: Sendable {
     var note: String
     /// Set for ingredients estimated from a recipe ("Beef tehari").
     var dish: String
+    /// Household measures with typical weights, and the one that best describes the amount.
+    var measures: [PortionUnit]
+    var displayUnit: String
 }
 
 nonisolated enum MealParserError: LocalizedError {
@@ -36,7 +39,7 @@ nonisolated struct ClaudeMealParser: Sendable {
     var maxRounds = 8
     let onProgress: @Sendable (String) -> Void
 
-    func parse(imageJPEG: Data?, transcript: String) async throws -> [ParsedMealItem] {
+    func parse(imageJPEG: Data?, transcript: String, sizeReference: String = "") async throws -> [ParsedMealItem] {
         var userContent: [[String: Any]] = []
         if let imageJPEG {
             userContent.append([
@@ -52,13 +55,22 @@ nonisolated struct ClaudeMealParser: Sendable {
                 : "The user's description of this meal: \"\(spoken)\"",
         ])
 
+        if !sizeReference.isEmpty {
+            userContent.append(["type": "text", "text": sizeReference])
+        }
+
         var found: [String: FoodCandidate] = [:]
         let usual = engine.savedFoods.sorted { $0.timesUsed > $1.timesUsed }.prefix(25)
         if !usual.isEmpty {
             for food in usual { found[food.candidate.id] = food.candidate }
             let lines = usual.map { food -> String in
                 let brand = food.candidate.brand.map { " (\($0))" } ?? ""
-                let usualAmount = food.candidate.servingGrams.map { ", usually \(Int($0.rounded())) g" } ?? ""
+                let usualAmount = food.candidate.servingGrams.map { grams -> String in
+                    if let unit = food.candidate.measures.first(where: { $0.name == food.candidate.preferredUnit }), unit.grams > 0 {
+                        return ", usually \(unit.label(quantity: grams / unit.grams)) (\(Int(grams.rounded())) g)"
+                    }
+                    return ", usually \(Int(grams.rounded())) g"
+                } ?? ""
                 let otherNames = food.aliases.isEmpty ? "" : ", also called: \(food.aliases.prefix(3).joined(separator: ", "))"
                 return "- \(food.candidate.name)\(brand)\(usualAmount)\(otherNames). food_id \(food.candidate.id)"
             }
@@ -186,7 +198,14 @@ nonisolated struct ClaudeMealParser: Sendable {
                 origin: ItemOrigin(rawValue: item["origin"] as? String ?? "") ?? .photo,
                 confidence: min(max((item["confidence"] as? Double) ?? 0.5, 0), 1),
                 note: item["note"] as? String ?? "",
-                dish: (item["dish"] as? String ?? "").trimmingCharacters(in: .whitespaces)
+                dish: (item["dish"] as? String ?? "").trimmingCharacters(in: .whitespaces),
+                measures: (item["measures"] as? [[String: Any]] ?? []).compactMap { raw in
+                    guard let name = (raw["unit"] as? String)?.lowercased().trimmingCharacters(in: .whitespaces),
+                          !name.isEmpty, let grams = raw["grams"] as? Double, grams > 0
+                    else { return nil }
+                    return PortionUnit(name: name, grams: grams)
+                },
+                displayUnit: (item["display_unit"] as? String ?? "").lowercased().trimmingCharacters(in: .whitespaces)
             )
         }
     }
@@ -218,6 +237,12 @@ nonisolated struct ClaudeMealParser: Sendable {
     - Always list the cooking fat (oil or ghee) as its own ingredient, since it's where much of \
     the energy in these dishes is. Mark it origin "inferred" with a note such as "How much ghee \
     or oil? Home-style tehari often uses 1–2 tbsp per plate."
+    - For every item, give 2–3 household measures that suit it, with typical gram weights \
+    (cooked rice: cup 160, plate 300; roti: piece 40; dal: ladle 120, cup 240; curry: ladle 120; \
+    egg: piece 50; bread: slice 35). Use short singular names. Set display_unit to the measure \
+    that best describes the amount, so the user sees "1½ cups" rather than grams.
+    - When the user gives household amounts ("two ladles of dal", "a cup of rice"), convert them \
+    with typical weights for that food and use that measure as display_unit.
     - Recipe estimates get confidence 0.6 or less, as amounts vary between cooks.
     - Never invent nutrition values. You only choose food_ids from search results and estimate grams. \
     If nothing suitable is found after two searches, submit the item with food_id "".
@@ -263,6 +288,19 @@ nonisolated struct ClaudeMealParser: Sendable {
                                 "origin": ["type": "string", "enum": ["voice", "photo", "inferred"]],
                                 "confidence": ["type": "number", "description": "0 to 1."],
                                 "note": ["type": "string", "description": "Optional short question or caveat for the user."],
+                                "measures": [
+                                    "type": "array",
+                                    "description": "2–3 household measures for this food with typical weights.",
+                                    "items": [
+                                        "type": "object",
+                                        "properties": [
+                                            "unit": ["type": "string", "description": "e.g. cup, piece, ladle, slice, plate"],
+                                            "grams": ["type": "number"],
+                                        ],
+                                        "required": ["unit", "grams"],
+                                    ],
+                                ],
+                                "display_unit": ["type": "string", "description": "The measure that best describes the amount, e.g. cup."],
                                 "dish": ["type": "string", "description": "For ingredients estimated from a recipe: the dish they belong to, e.g. \"Beef tehari\". Empty otherwise."],
                             ],
                             "required": ["name", "food_id", "grams", "origin", "confidence"],

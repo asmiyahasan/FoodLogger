@@ -38,7 +38,10 @@ struct ItemEditorView: View {
 
                 Section("Food") {
                     TextField("Name", text: $draft.name)
-                    NumberField(title: "Amount", value: $draft.grams, unit: "g")
+                }
+
+                Section("How much") {
+                    AmountEditor(draft: $draft)
                 }
 
                 Section {
@@ -112,6 +115,49 @@ struct ItemEditorView: View {
         if let serving = food.servingGrams, serving > 0 {
             draft.grams = serving
         }
+        draft.measures = food.measures
+        if food.source == .openFoodFacts, let serving = food.servingGrams, serving > 0 {
+            draft.measures.append(PortionUnit(name: "serving", grams: serving))
+            draft.unitName = "serving"
+        } else {
+            draft.unitName = draft.availableMeasures.contains { $0.name == food.preferredUnit } ? food.preferredUnit : ""
+        }
         draft.saveToMyFoods = false
+    }
+}
+
+/// Amount as a household measure ("1½ cups") or in grams.
+struct AmountEditor: View {
+    @Binding var draft: DraftItem
+
+    var body: some View {
+        Picker("Measure", selection: $draft.unitName) {
+            Text("Grams").tag("")
+            ForEach(draft.availableMeasures) { unit in
+                Text("\(unit.name) (\(gramsText(unit.grams)))").tag(unit.name)
+            }
+        }
+        if let unit = draft.selectedUnit, unit.grams > 0 {
+            Stepper(value: quantity(of: unit), in: unit.step...100, step: unit.step) {
+                HStack {
+                    Text(unit.label(quantity: draft.grams / unit.grams))
+                        .font(.rounded(.body))
+                        .monospacedDigit()
+                    Spacer()
+                    Text(gramsText(draft.grams.rounded()))
+                        .foregroundStyle(.secondary)
+                        .monospacedDigit()
+                }
+            }
+        } else {
+            NumberField(title: "Amount", value: $draft.grams, unit: "g")
+        }
+    }
+
+    private func quantity(of unit: PortionUnit) -> Binding<Double> {
+        Binding(
+            get: { (draft.grams / unit.grams / unit.step).rounded() * unit.step },
+            set: { draft.grams = ($0 * unit.grams).rounded() }
+        )
     }
 }

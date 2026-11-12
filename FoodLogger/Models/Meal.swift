@@ -65,6 +65,9 @@ final class MealItem {
     var position: Int = 0
     /// For ingredients estimated from a recipe: the dish they make up, e.g. "Beef tehari".
     var dish: String = ""
+    /// The household measure chosen for this item ("" = grams) and the measures on offer.
+    var unitName: String = ""
+    var measures: [PortionUnit] = []
     /// Copied when logged, so history never changes if a database updates.
     var nutrientsPer100g: Nutrients = Nutrients()
     var meal: Meal?
@@ -78,7 +81,9 @@ final class MealItem {
         origin: ItemOrigin = .user,
         confidence: Double = 1,
         position: Int = 0,
-        dish: String = ""
+        dish: String = "",
+        unitName: String = "",
+        measures: [PortionUnit] = []
     ) {
         self.name = name
         self.grams = grams
@@ -89,6 +94,8 @@ final class MealItem {
         self.confidence = confidence
         self.position = position
         self.dish = dish
+        self.unitName = unitName
+        self.measures = measures
     }
 
     var origin: ItemOrigin {

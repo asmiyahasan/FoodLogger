@@ -7,6 +7,8 @@ final class UserFood {
     var uuid: UUID = UUID()
     var name: String = ""
     var brand: String = ""
+    var measures: [PortionUnit] = []
+    var preferredUnit: String = ""
     var aliases: [String] = []
     var nutrientsPer100g: Nutrients = Nutrients()
     var defaultGrams: Double = 100

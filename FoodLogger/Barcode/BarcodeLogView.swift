@@ -69,7 +69,11 @@ struct BarcodeLogView: View {
                     origin: .user,
                     confidence: 1,
                     matchedName: food.name,
-                    brand: food.brand ?? ""
+                    brand: food.brand ?? "",
+                    measures: food.measures.isEmpty
+                        ? (food.servingGrams.map { [PortionUnit(name: "serving", grams: $0)] } ?? [])
+                        : food.measures,
+                    unitName: food.preferredUnit.isEmpty ? (food.servingGrams == nil ? "" : "serving") : food.preferredUnit
                 ))
             } else {
                 // Not in Open Food Facts: enter the label once, then save it to My foods.
