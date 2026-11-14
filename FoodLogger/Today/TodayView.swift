@@ -12,6 +12,7 @@ struct TodayView: View {
     @State private var showingGoals = false
     @State private var showingHistory = false
     @State private var editingMeal: Meal?
+    @State private var showingWeightEntry = false
 
     var body: some View {
         NavigationStack {
@@ -115,16 +116,28 @@ struct TodayView: View {
         .sheet(isPresented: $showingSettings) {
             SettingsView()
         }
+        .sheet(isPresented: $showingWeightEntry) {
+            WeightEntrySheet(day: .now)
+        }
     }
 }
 
 extension TodayView {
-    /// Opens the camera when the app was launched by "Snap a meal" (Siri or Shortcuts).
+    /// Opens the camera when the app was launched by "Snap a meal" (Siri or Shortcuts),
+    /// or the log weight sheet from a weigh-in reminder.
     func handleLaunchAction() {
-        guard pendingLaunchAction == "capture" else { return }
-        pendingLaunchAction = ""
-        day = Calendar.current.startOfDay(for: .now)
-        showingCapture = true
+        switch pendingLaunchAction {
+        case "capture":
+            pendingLaunchAction = ""
+            day = Calendar.current.startOfDay(for: .now)
+            showingCapture = true
+        case NotificationHandler.logWeightLaunchAction:
+            pendingLaunchAction = ""
+            day = Calendar.current.startOfDay(for: .now)
+            showingWeightEntry = true
+        default:
+            break
+        }
     }
 }
 

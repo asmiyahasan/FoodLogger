@@ -93,6 +93,10 @@ nonisolated enum SettingsKey {
     static let weightUnit = "weightUnit"
     static let goalWeightKg = "goalWeightKg"
     static let showWeightOnToday = "showWeightOnToday"
+    static let weightRemindersOn = "weightRemindersOn"
+    static let weightReminderDays = "weightReminderDays"
+    static let weightReminderMinutes = "weightReminderMinutes"
+    static let weightReminderWeekday = "weightReminderWeekday"
 
     /// Settings saved in a backup (goals, preferences, name, reminders).
     static let backedUp: [String] = [
@@ -102,6 +106,7 @@ nonisolated enum SettingsKey {
         waterRemindersOn, waterReminderStartHour, waterReminderEndHour, waterReminderIntervalHours,
         backupIncludesPhotos, plates, portionCorrectionAll, portionCorrectionSamples,
         weightUnit, goalWeightKg, showWeightOnToday,
+        weightRemindersOn, weightReminderDays, weightReminderMinutes, weightReminderWeekday,
     ]
 }
 
@@ -120,4 +125,8 @@ nonisolated enum GoalDefaults {
     static let reminderStartHour = 9
     static let reminderEndHour = 21
     static let reminderIntervalHours = 2.0
+    /// Weigh-in reminder: every day at 7:30 am; Monday when weekly.
+    static let weightReminderDays = 1
+    static let weightReminderMinutes = 7 * 60 + 30
+    static let weightReminderWeekday = 2
 }

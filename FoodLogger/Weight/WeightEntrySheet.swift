@@ -36,6 +36,7 @@ struct WeightEntrySheet: View {
                         Button("Delete this weigh-in", role: .destructive) {
                             context.delete(existing)
                             try? context.save()
+                            rescheduleReminders()
                             dismiss()
                         }
                     }
@@ -83,6 +84,13 @@ struct WeightEntrySheet: View {
             context.insert(WeightEntry(kilograms: kilograms, timestamp: DayView.entryTimestamp(for: date)))
         }
         try? context.save()
+        rescheduleReminders()
         dismiss()
+    }
+
+    /// The next weigh-in reminder counts from your latest weigh-in.
+    private func rescheduleReminders() {
+        let context = self.context
+        Task { await WeightReminders.reschedule(context: context) }
     }
 }

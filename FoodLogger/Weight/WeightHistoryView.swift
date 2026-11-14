@@ -243,6 +243,8 @@ struct WeightHistoryView: View {
             context.delete(entry)
         }
         try? context.save()
+        let context = self.context
+        Task { await WeightReminders.reschedule(context: context) }
     }
 }
 

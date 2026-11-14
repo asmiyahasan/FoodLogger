@@ -135,6 +135,10 @@ enum WaterReminders {
 /// Handles taps on reminder actions (+250 ml / +500 ml) without opening the app.
 final class NotificationHandler: NSObject, UNUserNotificationCenterDelegate {
     static let shared = NotificationHandler()
+    /// Category of weigh-in reminders (scheduled by the app's WeightReminders).
+    nonisolated static let weightCategoryID = "WEIGHT_REMINDER"
+    /// pendingLaunchAction value that opens the log weight sheet.
+    nonisolated static let logWeightLaunchAction = "logWeight"
     var container: ModelContainer?
 
     nonisolated func userNotificationCenter(
@@ -142,7 +146,13 @@ final class NotificationHandler: NSObject, UNUserNotificationCenterDelegate {
         didReceive response: UNNotificationResponse
     ) async {
         let action = response.actionIdentifier
+        let category = response.notification.request.content.categoryIdentifier
         await MainActor.run {
+            if category == NotificationHandler.weightCategoryID {
+                // Opening a weigh-in reminder goes straight to the log weight sheet.
+                UserDefaults.standard.set(NotificationHandler.logWeightLaunchAction, forKey: SettingsKey.pendingLaunchAction)
+                return
+            }
             NotificationHandler.shared.handle(action: action)
         }
     }

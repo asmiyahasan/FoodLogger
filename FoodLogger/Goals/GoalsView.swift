@@ -145,6 +145,8 @@ struct GoalsView: View {
                 Text("Progress is measured from your smoothed trend, not a single weigh-in, so day-to-day ups and downs don't throw it off.")
             }
 
+            WeightReminderSection()
+
             if showsReset {
                 Section {
                     Button("Reset all goals", role: .destructive) {

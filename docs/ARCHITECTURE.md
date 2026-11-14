@@ -166,6 +166,8 @@ The app's settings stay in `UserDefaults.standard` (`@AppStorage`). `SettingsMir
 
 `WeightEntry` stores each weigh-in in kilograms. `WeightTrend.points` keeps the latest weigh-in per day and runs an exponentially smoothed average over them (10% per day, adjusted for missed days, as in *The Hacker's Diet*). `weeklyRate` is the least-squares slope of the trend over the last 4 weeks. The Today card, the History chart and the "to goal" figure all use the trend rather than the raw reading. The goal weight lives in `SettingsKey.goalWeightKg` (0 means no goal).
 
+`WeightReminders` schedules weigh-in reminders every 1, 2, 3 or 7 days at a chosen time (set in Goals → Weight). The count restarts from the latest weigh-in, so a reminder is skipped if you've already weighed in; weekly reminders are skipped if you weighed in during the 6 days before. It schedules the next 8 and is rescheduled when the app opens, when a weigh-in is saved or deleted, and when the settings change. Tapping the notification sets `pendingLaunchAction` to `logWeight`, which opens the log weight sheet.
+
 ### Backup
 
 `BackupService` writes one JSON file (`BackupFile`, version 1) with settings, meals (photos optional), water and saved foods. New fields are optional so older backups still restore. Restore replaces everything after a confirmation.

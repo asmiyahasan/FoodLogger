@@ -44,6 +44,7 @@ struct ContentView: View {
                 }
                 Task {
                     await WaterReminders.reschedule(context: context)
+                    await WeightReminders.reschedule(context: context)
                     if hasCompletedOnboarding { await AppExpiry.scheduleReminder() }
                 }
             }
