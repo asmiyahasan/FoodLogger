@@ -151,6 +151,12 @@ struct DayView: View {
     @Query private var meals: [Meal]
     @Query private var water: [WaterEntry]
     @Query(sort: \WeightEntry.timestamp) private var weights: [WeightEntry]
+    /// The two weeks before this day, for "Log again" suggestions.
+    @Query private var recentMeals: [Meal]
+
+    @AppStorage(SettingsKey.showMealSuggestions) private var showSuggestions = true
+    @State private var reviewingSuggestion: Meal?
+    @State private var suggestionsLogged = 0
 
     @AppStorage(SettingsKey.showWeightOnToday) private var showWeight = true
     @AppStorage(SettingsKey.weightUnit) private var weightUnit: WeightUnit = .kg
@@ -187,6 +193,19 @@ struct DayView: View {
         _water = Query(
             filter: #Predicate<WaterEntry> { entry in entry.timestamp >= start && entry.timestamp < end },
             sort: \WaterEntry.timestamp
+        )
+        let lookbackStart = Calendar.current.date(byAdding: .day, value: -MealSuggestions.lookbackDays, to: start) ?? start
+        _recentMeals = Query(
+            filter: #Predicate<Meal> { meal in meal.timestamp >= lookbackStart && meal.timestamp < start },
+            sort: \Meal.timestamp
+        )
+    }
+
+    private var suggestions: [MealSuggestion] {
+        MealSuggestions.top(
+            from: recentMeals,
+            excluding: meals.filter { $0.status == .logged },
+            mealType: MealType.inferred(from: .now)
         )
     }
 
@@ -282,6 +301,28 @@ struct DayView: View {
                 }
             }
 
+            if showSuggestions {
+                let suggestions = self.suggestions
+                if !suggestions.isEmpty {
+                    Section {
+                        MealSuggestionsRow(
+                            suggestions: suggestions,
+                            unit: energyUnit,
+                            log: { meal in
+                                withAnimation { logAgain(meal) }
+                                suggestionsLogged += 1
+                            },
+                            review: { reviewingSuggestion = $0 }
+                        )
+                        // The cards sit on the page background, each with its own white card.
+                        .listRowInsets(EdgeInsets(top: 4, leading: 0, bottom: 4, trailing: 0))
+                        .listRowBackground(Color.clear)
+                    } header: {
+                        Text("Log again")
+                    }
+                }
+            }
+
             Section("Meals") {
                 if meals.isEmpty {
                     Text("Nothing logged yet. Tap Snap a meal to add one.")
@@ -313,6 +354,19 @@ struct DayView: View {
         .sheet(isPresented: $showingWeightEntry) {
             WeightEntrySheet(day: day)
         }
+        .sheet(item: $reviewingSuggestion) { meal in
+            MealEditorView(
+                defaultDate: Self.entryTimestamp(for: day),
+                drafts: meal.sortedItems.map { item in
+                    var draft = DraftItem(item: item)
+                    draft.confidence = 1   // you've had it before, so nothing to check
+                    draft.saveToMyFoods = false
+                    return draft
+                },
+                photo: meal.photo
+            )
+        }
+        .sensoryFeedback(.success, trigger: suggestionsLogged)
         .sheet(isPresented: $showingWeightTrend) {
             NavigationStack {
                 WeightHistoryView()

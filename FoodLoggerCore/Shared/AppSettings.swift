@@ -94,6 +94,7 @@ nonisolated enum SettingsKey {
     static let goalWeightKg = "goalWeightKg"
     static let showWeightOnToday = "showWeightOnToday"
     static let weightRemindersOn = "weightRemindersOn"
+    static let showMealSuggestions = "showMealSuggestions"
     static let weightReminderDays = "weightReminderDays"
     static let weightReminderMinutes = "weightReminderMinutes"
     static let weightReminderWeekday = "weightReminderWeekday"
@@ -106,7 +107,7 @@ nonisolated enum SettingsKey {
         waterRemindersOn, waterReminderStartHour, waterReminderEndHour, waterReminderIntervalHours,
         backupIncludesPhotos, plates, portionCorrectionAll, portionCorrectionSamples,
         weightUnit, goalWeightKg, showWeightOnToday,
-        weightRemindersOn, weightReminderDays, weightReminderMinutes, weightReminderWeekday,
+        showMealSuggestions, weightRemindersOn, weightReminderDays, weightReminderMinutes, weightReminderWeekday,
     ]
 }
 

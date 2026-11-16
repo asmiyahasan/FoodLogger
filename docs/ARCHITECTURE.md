@@ -33,7 +33,7 @@ There are three source folders. `FoodLogger/` is the app only. `FoodLoggerCore/`
 | `FoodLoggerCore/FoodSearch/` | `FoodCandidate`, `PortionUnit` and `SearchRanking` (needed by the models) |
 | `FoodLoggerCore/Reminders/` | Water reminder scheduling and the notification action handler |
 | `FoodLoggerCore/Widget/` | `WidgetSync` (redraws the widget), `SettingsMirror`, `AddWaterIntent` (the widget's +250 ml button) |
-| `FoodLogger/Today/` | `TodayView` (greeting, day picker, sheets) and `DayView` (one day's queries and lists); ring, bars and rows in `TodayComponents` |
+| `FoodLogger/Today/` | `TodayView` (greeting, day picker, sheets) and `DayView` (one day's queries and lists); ring, bars and rows in `TodayComponents`; `MealSuggestions` picks the "Log again" meals (most eaten in the last 14 days, boosted for this time of day, skipping ones already logged that day) |
 | `FoodLogger/Capture/` | `CaptureView` (photo, plate, voice, Analyse), `SpeechRecorder`, `CameraPicker`, `ImagePrep` |
 | `FoodLogger/MealParser/` | `ClaudeMealParser` (the AI loop) and `PortionLearning` |
 | `FoodLogger/FoodSearch/` | The three sources, `FoodSearchEngine`, `FoodSearchView` |

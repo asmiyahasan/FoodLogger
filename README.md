@@ -44,6 +44,7 @@ So FoodLogger uses AI for what it's good at (recognising food and estimating por
 **Daily tracking**
 - 🎯 Calorie goal with protein, carbs and fat calculated from it (Balanced, Higher protein, Lower carb or custom split).
 - 💧 Water tracking with one-tap buttons and smart reminders that only nudge you when you're behind pace. Log water straight from the notification.
+- 🔁 "Log again" suggestions: your top three meals from the last two weeks, one tap to log.
 - 📅 History calendar with a weekly chart and averages.
 - ⚖️ Weight tracking with a smoothed trend line, weekly rate, an optional goal weight and weigh-in reminders (daily, every 2 or 3 days, or weekly).
 - 🗣️ Siri and Shortcuts: "Log 500 ml of water in FoodLogger", "How many calories do I have left?"

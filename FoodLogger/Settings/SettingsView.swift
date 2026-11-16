@@ -8,6 +8,7 @@ struct SettingsView: View {
     @AppStorage(SettingsKey.userName) private var userName = ""
     @AppStorage(SettingsKey.energyUnit) private var energyUnit: EnergyUnit = .kcal
     @AppStorage(SettingsKey.weightUnit) private var weightUnit: WeightUnit = .kg
+    @AppStorage(SettingsKey.showMealSuggestions) private var showMealSuggestions = true
     @AppStorage(SettingsKey.keepMealPhotos) private var keepMealPhotos = true
     @AppStorage(SettingsKey.goalEnergyKcal) private var goalEnergy = GoalDefaults.energyKcal
 
@@ -39,6 +40,14 @@ struct SettingsView: View {
                             Text(unit.label).tag(unit)
                         }
                     }
+                }
+
+                Section {
+                    Toggle("Suggest recent meals", isOn: $showMealSuggestions)
+                } header: {
+                    Text("Today screen")
+                } footer: {
+                    Text("Shows up to three meals you've had in the last two weeks, so you can log them again in one tap.")
                 }
 
                 Section {
