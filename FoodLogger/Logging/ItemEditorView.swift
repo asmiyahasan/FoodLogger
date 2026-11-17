@@ -9,6 +9,10 @@ struct ItemEditorView: View {
     @State private var draft: DraftItem
     @State private var showingSearch = false
     @State private var findingMeasures = false
+    @State private var showingScanner = false
+    @State private var lookingUpBarcode: String?
+    @State private var barcodeError: String?
+    @Query private var myFoods: [UserFood]
     let onSave: (DraftItem) -> Void
 
     init(item: DraftItem, onSave: @escaping (DraftItem) -> Void) {
@@ -27,8 +31,25 @@ struct ItemEditorView: View {
                     Button("Search foods", systemImage: "magnifyingglass") {
                         showingSearch = true
                     }
+                    #if os(iOS)
+                    Button("Scan barcode", systemImage: "barcode.viewfinder") {
+                        barcodeError = nil
+                        showingScanner = true
+                    }
+                    #endif
+                    if let code = lookingUpBarcode {
+                        HStack(spacing: 8) {
+                            ProgressView()
+                            Text("Looking up \(code)…")
+                                .font(.footnote)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
                 } footer: {
-                    if !draft.foodID.isEmpty {
+                    if let barcodeError {
+                        Text(barcodeError)
+                            .foregroundStyle(Theme.deepOrangeText)
+                    } else if !draft.foodID.isEmpty {
                         Text(draft.matchedName.isEmpty
                              ? "Values from \(draft.sourceLabel)."
                              : "Values from \(draft.sourceLabel): \(draft.matchedName).")
@@ -81,6 +102,13 @@ struct ItemEditorView: View {
                     apply(food)
                 }
             }
+            #if os(iOS)
+            .fullScreenCover(isPresented: $showingScanner) {
+                BarcodeScannerSheet { code in
+                    Task { await lookUpBarcode(code) }
+                }
+            }
+            #endif
             .navigationTitle(draft.name.isEmpty ? "Add item" : draft.name)
             .inlineNavigationTitle()
             .toolbar {
@@ -134,6 +162,31 @@ struct ItemEditorView: View {
         draft.saveToMyFoods = false
         if food.source != .mine {
             lookUpMeasures(for: food)
+        }
+    }
+
+    /// Fills the item from a scanned barcode: your saved foods first, then Open Food Facts.
+    /// If the product isn't found, the barcode is kept so you can enter the label once and reuse it.
+    private func lookUpBarcode(_ code: String) async {
+        lookingUpBarcode = code
+        defer { lookingUpBarcode = nil }
+        let saved = myFoods.map { (basedOn: $0.basedOnFoodID, food: $0.candidate) }
+        do {
+            if let food = try await BarcodeLookup.find(code, savedFoods: saved) {
+                draft.name = ""   // take the product's name
+                apply(food)
+                if food.source == .mine {
+                    draft.unitName = draft.availableMeasures.contains { $0.name == food.preferredUnit } ? food.preferredUnit : draft.unitName
+                }
+            } else {
+                draft.foodID = BarcodeLookup.foodID(for: code)
+                draft.sourceLabel = "Barcode \(code)"
+                draft.matchedName = ""
+                draft.saveToMyFoods = true
+                barcodeError = "\(code) isn't in Open Food Facts yet. Enter the name and the label's per 100 g values below; it'll be remembered for next time."
+            }
+        } catch {
+            barcodeError = "Couldn't look up \(code): \(error.localizedDescription)"
         }
     }
 
