@@ -20,9 +20,16 @@ struct ContentView: View {
     var body: some View {
         Group {
             if hasCompletedOnboarding {
-                TodayView()
-                    .id(dataVersion)
-                    .transition(.opacity)
+                TabView {
+                    Tab("Today", systemImage: "fork.knife") {
+                        TodayView()
+                            .id(dataVersion)
+                    }
+                    Tab("Workouts", systemImage: "dumbbell.fill") {
+                        WorkoutsView()
+                    }
+                }
+                .transition(.opacity)
             } else {
                 OnboardingView()
                     .transition(.opacity)
@@ -58,5 +65,6 @@ struct ContentView: View {
 
 #Preview {
     ContentView()
-        .modelContainer(for: [Meal.self, MealItem.self, UserFood.self, WaterEntry.self, WeightEntry.self], inMemory: true)
+        .modelContainer(for: [Meal.self, MealItem.self, UserFood.self, WaterEntry.self, WeightEntry.self,
+                              Workout.self, WorkoutExercise.self, WorkoutSet.self, Routine.self], inMemory: true)
 }

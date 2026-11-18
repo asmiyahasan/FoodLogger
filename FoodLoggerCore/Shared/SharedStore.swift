@@ -21,7 +21,10 @@ nonisolated enum AppGroup {
 /// The one database, shared by the app, the widget, notification buttons and Siri.
 enum SharedStore {
     static let container: ModelContainer = {
-        let schema = Schema([Meal.self, MealItem.self, UserFood.self, WaterEntry.self, WeightEntry.self])
+        let schema = Schema([
+            Meal.self, MealItem.self, UserFood.self, WaterEntry.self, WeightEntry.self,
+            Workout.self, WorkoutExercise.self, WorkoutSet.self, Routine.self,
+        ])
         do {
             guard let storeURL = groupStoreURL else {
                 // App Group unavailable (shouldn't happen): fall back to the app's own store.

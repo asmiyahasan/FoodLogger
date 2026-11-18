@@ -41,6 +41,7 @@ There are three source folders. `FoodLogger/` is the app only. `FoodLoggerCore/`
 | `FoodLogger/Barcode/` | VisionKit scanner, lookup and quick-log flow |
 | `Goals/`, `History/`, `Settings/`, `Onboarding/`, `Plates/`, `Backup/` | One feature each (in `FoodLogger/`) |
 | `FoodLogger/Weight/` | `WeightTrend` (smoothing and weekly rate), `WeightCard` on Today, `WeightEntrySheet`, `WeightHistoryView` (chart and list) |
+| `FoodLogger/Workouts/` | `WorkoutsView` (the Workouts tab), `WorkoutEditorView` (in progress or past), `RoutineEditorView`, `ExercisePickerView`, `ExerciseProgressView`, `ExerciseLibrary` and `WorkoutStore` (start, prefill, finish) |
 | `FoodLogger/Intents/` | Siri and Shortcuts (App Intents) |
 | `FoodLogger/Shared/` | `Theme`, `KeychainStore`, `APIKeys`, `AppExpiry`, platform helpers |
 | `FoodLoggerWidget/` | The "Today" widget: small, medium, lock-screen rectangular and circular |
@@ -85,6 +86,30 @@ erDiagram
     WeightEntry {
         Date timestamp
         Double kilograms "always kg; shown in kg or lb"
+    }
+    Workout ||--o{ WorkoutExercise : exercises
+    WorkoutExercise ||--o{ WorkoutSet : sets
+    Workout {
+        Date startedAt
+        Date endedAt "nil while in progress"
+        String name
+        String routineID
+    }
+    WorkoutExercise {
+        String name
+        String kindRaw "strength / cardio"
+        Double durationMinutes
+        Double distanceKm
+    }
+    WorkoutSet {
+        Int reps
+        Double weightKg
+        Bool isDone
+    }
+    Routine {
+        UUID uuid
+        String name
+        RoutineExercise_array exercises "name, kind, target sets/reps/minutes"
     }
 ```
 
@@ -167,6 +192,10 @@ The app's settings stay in `UserDefaults.standard` (`@AppStorage`). `SettingsMir
 `WeightEntry` stores each weigh-in in kilograms. `WeightTrend.points` keeps the latest weigh-in per day and runs an exponentially smoothed average over them (10% per day, adjusted for missed days, as in *The Hacker's Diet*). `weeklyRate` is the least-squares slope of the trend over the last 4 weeks. The Today card, the History chart and the "to goal" figure all use the trend rather than the raw reading. The goal weight lives in `SettingsKey.goalWeightKg` (0 means no goal).
 
 `WeightReminders` schedules weigh-in reminders every 1, 2, 3 or 7 days at a chosen time (set in Goals → Weight). The count restarts from the latest weigh-in, so a reminder is skipped if you've already weighed in; weekly reminders are skipped if you weighed in during the 6 days before. It schedules the next 8 and is rescheduled when the app opens, when a weigh-in is saved or deleted, and when the settings change. Tapping the notification sets `pendingLaunchAction` to `logWeight`, which opens the log weight sheet.
+
+### Workouts
+
+The app has two tabs: Today and Workouts. A workout is in progress while `endedAt` is nil; only one can be in progress at a time, and hiding the editor keeps it running. `WorkoutStore.start` creates a workout, empty or from a `Routine`. `addExercise` fills each exercise's sets from the last finished time you did it (`lastPerformance`, matched by name), falling back to the routine's targets. `finish` drops sets with no reps and empty exercises, and deletes the workout if nothing is left. Weights are stored in kg and shown in the weight unit. Workouts don't estimate calories burned and don't change the food goal.
 
 ### Backup
 

@@ -15,6 +15,42 @@ nonisolated struct BackupFile: Codable, Sendable {
     var savedFoods: [SavedFoodRecord]
     /// Missing in backups made before weight tracking.
     var weights: [WeightRecord]?
+    /// Missing in backups made before workouts.
+    var workouts: [WorkoutRecord]?
+    var routines: [RoutineRecord]?
+}
+
+nonisolated struct WorkoutRecord: Codable, Sendable {
+    var startedAt: Date
+    var endedAt: Date?
+    var name: String
+    var notes: String
+    var routineID: String
+    var exercises: [WorkoutExerciseRecord]
+}
+
+nonisolated struct WorkoutExerciseRecord: Codable, Sendable {
+    var name: String
+    var kind: String
+    var position: Int
+    var durationMinutes: Double
+    var distanceKm: Double
+    var sets: [WorkoutSetRecord]
+}
+
+nonisolated struct WorkoutSetRecord: Codable, Sendable {
+    var position: Int
+    var reps: Int
+    var weightKg: Double
+    var isDone: Bool
+}
+
+nonisolated struct RoutineRecord: Codable, Sendable {
+    var uuid: UUID
+    var name: String
+    var exercises: [RoutineExercise]
+    var createdAt: Date
+    var lastUsed: Date?
 }
 
 nonisolated enum SettingValue: Codable, Sendable {
@@ -141,6 +177,8 @@ enum BackupService {
         let water = try context.fetch(FetchDescriptor<WaterEntry>(sortBy: [SortDescriptor(\.timestamp)]))
         let foods = try context.fetch(FetchDescriptor<UserFood>())
         let weights = try context.fetch(FetchDescriptor<WeightEntry>(sortBy: [SortDescriptor(\.timestamp)]))
+        let workouts = try context.fetch(FetchDescriptor<Workout>(sortBy: [SortDescriptor(\.startedAt)]))
+        let routines = try context.fetch(FetchDescriptor<Routine>())
 
         let file = BackupFile(
             exportedAt: .now,
@@ -175,7 +213,25 @@ enum BackupService {
                     lastUsed: food.lastUsed, createdAt: food.createdAt
                 )
             },
-            weights: weights.map { WeightRecord(timestamp: $0.timestamp, kilograms: $0.kilograms) }
+            weights: weights.map { WeightRecord(timestamp: $0.timestamp, kilograms: $0.kilograms) },
+            workouts: workouts.map { workout in
+                WorkoutRecord(
+                    startedAt: workout.startedAt, endedAt: workout.endedAt, name: workout.name,
+                    notes: workout.notes, routineID: workout.routineID,
+                    exercises: workout.sortedExercises.map { exercise in
+                        WorkoutExerciseRecord(
+                            name: exercise.name, kind: exercise.kindRaw, position: exercise.position,
+                            durationMinutes: exercise.durationMinutes, distanceKm: exercise.distanceKm,
+                            sets: exercise.sortedSets.map {
+                                WorkoutSetRecord(position: $0.position, reps: $0.reps, weightKg: $0.weightKg, isDone: $0.isDone)
+                            }
+                        )
+                    }
+                )
+            },
+            routines: routines.map {
+                RoutineRecord(uuid: $0.uuid, name: $0.name, exercises: $0.exercises, createdAt: $0.createdAt, lastUsed: $0.lastUsed)
+            }
         )
 
         let encoder = JSONEncoder()
@@ -201,6 +257,12 @@ enum BackupService {
         // An older backup has no weights: keep the ones already in the app rather than wiping them.
         if file.weights != nil {
             for entry in try context.fetch(FetchDescriptor<WeightEntry>()) { context.delete(entry) }
+        }
+        if file.workouts != nil {
+            for workout in try context.fetch(FetchDescriptor<Workout>()) { context.delete(workout) }
+        }
+        if file.routines != nil {
+            for routine in try context.fetch(FetchDescriptor<Routine>()) { context.delete(routine) }
         }
         try context.save()
 
@@ -233,6 +295,36 @@ enum BackupService {
         }
         for record in file.weights ?? [] {
             context.insert(WeightEntry(kilograms: record.kilograms, timestamp: record.timestamp))
+        }
+        for record in file.workouts ?? [] {
+            let workout = Workout(name: record.name, startedAt: record.startedAt, routineID: record.routineID)
+            workout.endedAt = record.endedAt
+            workout.notes = record.notes
+            context.insert(workout)
+            for exerciseRecord in record.exercises {
+                let exercise = WorkoutExercise(
+                    name: exerciseRecord.name,
+                    kind: ExerciseKind(rawValue: exerciseRecord.kind) ?? .strength,
+                    position: exerciseRecord.position
+                )
+                exercise.durationMinutes = exerciseRecord.durationMinutes
+                exercise.distanceKm = exerciseRecord.distanceKm
+                context.insert(exercise)
+                exercise.workout = workout
+                for setRecord in exerciseRecord.sets {
+                    let set = WorkoutSet(position: setRecord.position, reps: setRecord.reps, weightKg: setRecord.weightKg)
+                    set.isDone = setRecord.isDone
+                    context.insert(set)
+                    set.exercise = exercise
+                }
+            }
+        }
+        for record in file.routines ?? [] {
+            let routine = Routine(name: record.name, exercises: record.exercises)
+            routine.uuid = record.uuid
+            routine.createdAt = record.createdAt
+            routine.lastUsed = record.lastUsed
+            context.insert(routine)
         }
         for record in file.savedFoods {
             let food = UserFood(
